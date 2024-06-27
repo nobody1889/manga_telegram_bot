@@ -1,17 +1,11 @@
-import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, CallbackContext, CallbackQueryHandler, \
     MessageHandler, filters
 
-import stuff
-from stuff import valid_sites, add_url, remove_url, search_new
+from stuff import valid_sites, add_url, remove_url
+from telegram_timer import set_timer, unset, check_comics
 
-# logging.basicConfig(
-#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-#
-#     level=logging.INFO
-# )
-Token = 'YOUR TOKEN'
+Token = '6968670681:AAEY1wqMF9zGCvsMMty3PXrPGO2wPuAe-ts'
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -24,25 +18,12 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
 
     text_part = '\n'.join(valid_sites)
-    text = f"""hi {user.first_name} thanks for using our but first of all :)
+    text = f"""hi {user.first_name} thanks for using our bot first of all :)
 you have to use this websites and send me the main page of the comics
 please enjoy  :)
 {text_part}
 """
     await update.message.reply_text(text)
-
-
-async def check_comics(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text('search for new updates')
-    comics: dict = await search_new(str(update.message.from_user.id))
-    if comics:
-        for comic in comics:
-            text0 = f"new chpter for {comic} :\n"
-            text1 = [one for one in comics[comic]]
-            text = text0 + '\n'.join(text1)
-            await update.message.reply_text(text)
-    else:
-        await update.message.reply_text('no new chapter')
 
 
 async def show_main_menu(update: Update, context: CallbackContext) -> None:
@@ -132,9 +113,14 @@ if __name__ == '__main__':
     start_handler = CommandHandler('start', start)
     help_handler = CommandHandler('help', help)
     check_handler = CommandHandler('check', check_comics)
+    set_handler = CommandHandler('set_time', set_timer)
+    unset_handler = CommandHandler('unset', unset)
+
     application.add_handler(start_handler)
     application.add_handler(help_handler)
     application.add_handler(check_handler)
+    application.add_handler(set_handler)
+    application.add_handler(unset_handler)
 
     application.add_handler(CallbackQueryHandler(button))
 
