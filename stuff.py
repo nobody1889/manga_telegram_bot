@@ -1,5 +1,5 @@
 from clients.commons import Js_worker
-from clients.manhwax import Client
+from clients.web_sites import Client
 
 valid_sites = [
     'https://manhwax.org',
@@ -40,7 +40,7 @@ def remove_url(urls: str, user):
 
 
 async def search_new(user: str) -> dict:
-    person = Client(name='5519596138')
+    person = Client(name=user)
     await person.run()
     person.write_data()
     news: dict = person.new_chapters()

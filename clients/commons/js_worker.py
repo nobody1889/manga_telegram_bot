@@ -31,7 +31,7 @@ class Js_worker:
         for url in urls:
             local_data = {
                 url: {
-                    'type': '',  # which website
+                    'type': url.split('/')[2].split('.')[0],  # which website
                     'name': '',
                     'cover_url': '',  # cover of the comic
                     'rate': 0,  # rating of comic

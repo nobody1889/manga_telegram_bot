@@ -17,6 +17,3 @@ class Requests:
         what_return = list(await asyncio.gather(*tasks))
         return what_return
 
-    # def async_get(self, urls: list[str]) -> list:
-    #     responses = list(asyncio.run(self.__aget(urls)))
-    #     return responses
