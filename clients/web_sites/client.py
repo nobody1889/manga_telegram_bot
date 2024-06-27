@@ -32,6 +32,41 @@ def mangahentai(soup: BeautifulSoup, data: dict) -> dict:
     return data
 
 
+def madaradex(soup: BeautifulSoup, data: dict) -> dict:
+    return data
+
+
+def chapmanganato(soup: BeautifulSoup, data: dict) -> dict:
+    chapters = soup.find("ul", class_="row-content-chapter").find_all('li')
+
+    data["all_chapters"].clear()
+    for chapter in chapters:
+        data["all_chapters"].append(chapter.find('a')['href'] + '/')
+
+    data["name"] = soup.find('h1').text.split('\n')[-1]
+    data["rate"] = float(soup.find('em', {'property': "v:average"}).text) * 2
+    data["cover_url"] = soup.find("img", class_="img-loading")['src']
+
+    return data
+
+
+def comixextra(soup: BeautifulSoup, data: dict) -> dict:
+    chapters = soup.find("tbody", {"id": "list", "offset": "0"}).find_all('td')
+
+    data["all_chapters"].clear()
+    for chapter in chapters:
+        if chapter.find('a'):
+            data["all_chapters"].append(chapter.find('a')['href'] + '/')
+
+    name = soup.find('h1', class_="movie-title mobile-hide").find('span').text.split('\n')
+    new_name = [n for n in name[1].split(' ') if n]
+    data["name"] = ' '.join(new_name)
+    data["rate"] = None
+    data["cover_url"] = soup.find("img", {'alt': data['name']})['src']
+
+    return data
+
+
 class Client:
     def __init__(self, name: str):
         self._new_chapters_dict = {}
@@ -58,12 +93,25 @@ class Client:
                 self.data[url] = manhwax(soup, data=self.data[url])
             case 'mangahentai':
                 self.data[url] = mangahentai(soup, data=self.data[url])
+            case 'mangaread':
+                self.data[url] = mangahentai(soup, data=self.data[url])
+            case 'madaradex':
+                self.data[url] = madaradex(soup, data=self.data[url])
+            case 'chapmanganato':
+                self.data[url] = chapmanganato(soup, data=self.data[url])
+            case 'comixextra':
+                self.data[url] = comixextra(soup, data=self.data[url])
 
         last_one = self.data[url]["last_chapter"]
         last_chapter = self.data[url]["last_chapter"] = self.data[url]["all_chapters"][0]
 
         if last_one:
-            num = int(float(last_chapter.split('/')[-2].split('-')[-2]) - float(last_one.split('/')[-2].split('-')[-2]))
+            try:
+                num = int(float(last_chapter.split('/')[-2].split('-')[-2]) - float(last_one.split('/')[-2].split('-')[-2]))
+            except ValueError:
+                num = int(
+                    float(last_chapter.split('/')[-2].split('-')[-1]) - float(last_one.split('/')[-2].split('-')[-1]))
+
             if num > 0:
                 self.data[url]["new_chapters"] = self.data[url]["all_chapters"][:num]
                 self._new_chapters_dict[url] = self.data[url]["all_chapters"][:num]
@@ -80,6 +128,12 @@ class Client:
 
     def new_chapters(self):
         return self._new_chapters_dict
+
+    def get(self) -> list:
+        urls: list = []
+        for d in self.data:
+            urls.append(d)
+        return urls
 
     async def run(self):
         await self.main_pages_update()

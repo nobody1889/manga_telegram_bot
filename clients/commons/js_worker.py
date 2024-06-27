@@ -69,15 +69,4 @@ class Js_worker:
             self.write(data=new_data)
 
 
-
-if __name__ == '__main__':
-    a = Js_worker(name='nobody')
-    a.write([
-        'https://manhwax.org/manga/sex-stopwatch/',
-        'https://manhwax.org/manga/secret-class/',
-    ])
-    b = a.read()
-    b['https://manhwax.org/manga/sex-stopwatch/']["last_chapter"] = '1'
-    d = b['https://manhwax.org/manga/sex-stopwatch/']["last_chapter"]
-    b['https://manhwax.org/manga/sex-stopwatch/']["all_chapters"].append(1)
-    print(b['https://manhwax.org/manga/sex-stopwatch/']["all_chapters"])
+__all__ = ("Js_worker",)
