@@ -81,7 +81,7 @@ class Client:
             self.urls = list(data.keys())
             self.data: dict = data
         else:
-            raise Exception('invalid person')
+            raise ValueError('invalid person')
 
     async def _each_page(self, page: httpx.Client().get):
         url = str(page.url)
@@ -107,7 +107,8 @@ class Client:
 
         if last_one:
             try:
-                num = int(float(last_chapter.split('/')[-2].split('-')[-2]) - float(last_one.split('/')[-2].split('-')[-2]))
+                num = int(
+                    float(last_chapter.split('/')[-2].split('-')[-2]) - float(last_one.split('/')[-2].split('-')[-2]))
             except ValueError:
                 num = int(
                     float(last_chapter.split('/')[-2].split('-')[-1]) - float(last_one.split('/')[-2].split('-')[-1]))
@@ -117,6 +118,8 @@ class Client:
                 self._new_chapters_dict[url] = self.data[url]["all_chapters"][:num]
             else:
                 self.data[url]["new_chapters"] = []
+        else:
+            self.data[url]["new_chapters"] = self.data[url]["last_chapter"]
 
     async def main_pages_update(self):
         self.__comics_res = await Requests().aget(self.urls)

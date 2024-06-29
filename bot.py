@@ -3,18 +3,18 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Callb
     MessageHandler, filters
 
 import scheduler
-from stuff import valid_sites, add_url, remove_url, show_comics
-from updates import check_comics
+from stuff import valid_sites, add_url, remove_url, show_comics, check
+from updates import check_comics_command
 from scheduler import Scheduler
 
 Token = '6968670681:AAEY1wqMF9zGCvsMMty3PXrPGO2wPuAe-ts'
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await show_main_menu(update, context)
 
 
-async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
 
     text_part = '\n'.join(valid_sites)
@@ -26,16 +26,19 @@ please enjoy  :)
     await update.message.reply_text(text)
 
 
-async def schedule_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def schedule_time_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await scheduler.scheduler_menu(update, context)
 
 
 async def show_main_menu(update: Update, context: CallbackContext) -> None:
     keyboard = [
         [InlineKeyboardButton("add comics", callback_data='send_url')],
-        [InlineKeyboardButton("Remove comics", callback_data='remove_url')],
-        [InlineKeyboardButton("Show My comics", callback_data='show')]
     ]
+    if check(name=str(update.effective_message.chat_id)):
+        keyboard.extend([
+            [InlineKeyboardButton("Remove comics", callback_data='remove_url')],
+            [InlineKeyboardButton("Show My comics", callback_data='show')]
+        ])
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text('Please choose an option:', reply_markup=reply_markup)
 
@@ -47,20 +50,22 @@ async def button(update: Update, context: CallbackContext) -> None:
     match action:
         case 'send_url':
             await query.edit_message_text(text="Please send me the URL.")
-            context.user_data["action"] = 'reserve_url'
+            context.user_data["action"] = 'receive_url'
         case 'remove_url':
-            await query.edit_message_text(text="Please specify the URL to remove.")
+            await query.edit_message_text(text="Please specify the URL to remove.\n(or all via <all>)")
             context.user_data["action"] = 'remove'
         case 'show':
             await query.edit_message_text(text="Please wait . . .")
             my_comics = show_comics(str(update.effective_message.chat_id))
             await context.bot.send_message(update.effective_message.chat_id, my_comics, disable_web_page_preview=True)
+        case 'set_time':
+            context.user_data["action"] = 'set_time'
 
 
 async def handle_url(update: Update, context: CallbackContext) -> None:
     text = update.message.text
     action = context.user_data.get("action")
-    print(action)
+
     if context.user_data.get("action") is None:
         await update.message.reply_text("nop i can't understand 😞")
         return
@@ -78,7 +83,7 @@ async def handle_url(update: Update, context: CallbackContext) -> None:
 
             context.user_data["action"] = None
 
-        case 'reserve_url':
+        case 'receive_url':
             valued, invalid = add_url(text, user=str(update.message.from_user.id))
             if valued:
                 await update.message.reply_text(f'LINKs received: \n{valued}')
@@ -95,10 +100,10 @@ async def handle_url(update: Update, context: CallbackContext) -> None:
 if __name__ == '__main__':
     application = ApplicationBuilder().token(Token).build()
     scheduler = Scheduler()
-    start_handler = CommandHandler('start', start)
-    help_handler = CommandHandler('help', help)
-    check_handler = CommandHandler('check', check_comics)
-    my_scheduler = CommandHandler('schedule', schedule_time)
+    start_handler = CommandHandler('start', start_command)
+    help_handler = CommandHandler('help', help_command)
+    check_handler = CommandHandler('check', check_comics_command)
+    my_scheduler = CommandHandler('schedule', schedule_time_command)
 
     application.add_handler(help_handler)
     application.add_handler(check_handler)

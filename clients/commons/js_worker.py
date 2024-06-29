@@ -55,7 +55,7 @@ class Js_worker:
             json.dump(data, json_file, indent=4)
 
     def delete(self):
-        os.remove(self.__path + self._name + '.json')
+        os.remove(self.__path)
 
     def update(self, data: dict = None, urls: list[str] = None):
         if data == urls:

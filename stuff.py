@@ -1,3 +1,5 @@
+import os
+
 from clients.commons import Js_worker
 from clients.web_sites import Client
 
@@ -30,14 +32,19 @@ def add_url(urls: str, user: str):
 
 def remove_url(urls: str, user):
     person = Js_worker(user)
-    if person.read():
+    if urls.lower() == 'all':
+        person.delete()
+    elif person.read():
         data: dict | None = person.read()
 
         if data:
             valid, invalid = valid_urls(urls)
             for v in valid:
                 data.pop(v)
-            person.write(data=data)
+            if len(data) == 0:
+                person.delete()
+            else:
+                person.write(data=data)
             return valid, invalid
 
     return None, None
@@ -58,3 +65,12 @@ def show_comics(name: str) -> str:
     for num, my_comic in enumerate(my_comics):
         text += str(num) + '. ' + str(my_comic) + '\n'
     return text
+
+
+def check(name: str):
+    one = os.getcwd()
+    path: str = one + '/js_holder/' + name + '.json'
+    if os.path.exists(path):
+        return True
+
+    return False
