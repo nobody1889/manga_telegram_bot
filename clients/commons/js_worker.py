@@ -24,7 +24,8 @@ class Js_worker:
 
         return what_return
 
-    def __set_data(self, urls: list[str], data: dict = None):
+    @staticmethod
+    def __set_data(urls: list[str], data: dict = None) -> dict:
         if data is None:
             data = {}
 
