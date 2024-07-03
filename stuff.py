@@ -5,9 +5,6 @@ from clients.web_sites import Client
 
 valid_sites = [
     'https://manhwax.org',
-    # 'https://hentaiwebtoon.com',
-    # 'https://www.mangaread.org/'
-    # 'https://madaradex.org/',
     'https://chapmanganato.to/',
     'https://comixextra.com/',
 ]
@@ -23,10 +20,11 @@ def valid_urls(url: str):
     return my_valid_urls, my_invalid_urls
 
 
-def add_url(urls: str, user: str):
+async def add_url(urls: str, user: str):
     valid, invalid = valid_urls(urls)
     if valid:
         Js_worker(user).update(urls=valid)
+        await search_new(user, valid)
     return valid, invalid
 
 
@@ -50,21 +48,19 @@ def remove_url(urls: str, user):
     return None, None
 
 
-async def search_new(user: str) -> dict:
-    person = Client(name=user)
+async def search_new(user: str, urls: list[str] = None) -> dict:
+    print('search_new')
+    person = Client(name=user, urls=urls)
     await person.run()
     person.write_data()
     news: dict = person.new_chapters()
+
     return news
 
 
-def show_comics(name: str) -> str:
+def show_comics(name: str) -> dict:
     person = Client(name=name)
-    my_comics = person.get()
-    text = ''
-    for num, my_comic in enumerate(my_comics):
-        text += str(num) + '. ' + str(my_comic) + '\n'
-    return text
+    return person.data
 
 
 def check(name: str):
