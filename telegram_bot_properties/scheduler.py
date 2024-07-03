@@ -1,5 +1,4 @@
-import datetime
-from updates import reload_check
+from stuff import search_new
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
@@ -7,7 +6,7 @@ from telegram.ext import ContextTypes
 class Scheduler:
     def __init__(self):
         self.__due = None
-        self.__name = None
+        self.__name: str = ''
         self.time_is_set = False
 
     async def scheduler_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -20,6 +19,7 @@ class Scheduler:
                 [InlineKeyboardButton("Show scheduled time", callback_data='show_time')]
             ])
         reply_markup = InlineKeyboardMarkup(keyboard)
+        self.__name = str(update.effective_message.chat_id)
         await update.message.reply_text('Please choose an option:', reply_markup=reply_markup)
 
     async def schedule_button(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -30,7 +30,6 @@ class Scheduler:
         match response:
             case 'set_time':
                 context.user_data["action"] = 'set_time'
-                self.__name = str(update.effective_message.chat_id)
                 await context.bot.send_message(chat_id=self.__name, text='pleas enter the time like '
                                                                          'blow:\n<hour>')
             case 'remove_time':
@@ -38,19 +37,11 @@ class Scheduler:
             case 'show_time':
                 await self.show_time(update, context)
 
-    async def schedule_text_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        action = context.user_data.get("action")
-        new_text = update.message.text
-        if action == 'set_time':
-            text = new_text
-            await self.set_timer(text, update, context)
-        else:
-            print('choose one button')
-
-    async def alarm(self, context: ContextTypes.DEFAULT_TYPE) -> None:
+    @staticmethod
+    async def alarm(context: ContextTypes.DEFAULT_TYPE) -> None:
         job = context.job
         await context.bot.send_message(job.chat_id, text=f"next will be {job.data} hour later!!!(or unset)")
-        comics = await reload_check(job.name)
+        comics = await search_new(job.name)
         if comics:
             for comic in comics:
                 text0 = f"new chapter for {comic} :\n"
@@ -69,20 +60,20 @@ class Scheduler:
         return True
 
     async def set_timer(self, local_time: str, update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool | None:
+        if not self.__name:
+            self.__name = str(update.effective_message.chat_id)
         try:
-            # self.__due = datetime.datetime.strptime(local_time, '%H:%M').time()
-            self.__due = int(local_time)
+            self.__due = int(local_time) * 60 * 60 * 24
+
             if self.__due <= 0:
-                await update.effective_message.reply_text("Sorry we can't accept the number")
+                await context.bot.send_message(chat_id=self.__name, text="Sorry we can't accept the number")
                 return
 
             job_removed = self.remove_job_if_exists(context)
 
-            # context.job_queue.run_daily(callback=self.alarm, time=self.__due, chat_id=self.__name, name=self.__name,
-            #                             data=self.__due)
-            context.job_queue.run_repeating(self.alarm, self.__due * 60 * 24, chat_id=self.__name,
+            context.job_queue.run_repeating(self.alarm, self.__due, chat_id=self.__name,
                                             name=self.__name,
-                                            data=self.__due*60*24)
+                                            data=self.__due)
             self.time_is_set = True
 
             text = "Timer successfully set for daily check!"
@@ -92,13 +83,12 @@ class Scheduler:
             await update.effective_message.reply_text(text)
             return True
         except (IndexError, ValueError):
-            text = 'please type link blow:\n<hour>'
-            # await context.bot.send_message(chat_id=self.__name, text=text)
+            text = 'please type like blow:\n<hour>'
             await update.effective_message.reply_text(text=text)
             return False
 
     async def show_time(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        await context.bot.send_message(chat_id=self.__name, text=str(self.__due.hour) + ':' + str(self.__due.minute))
+        await context.bot.send_message(chat_id=self.__name, text=str(self.__due.hour))
 
     async def unset(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         job_removed = self.remove_job_if_exists(context)
@@ -107,3 +97,6 @@ class Scheduler:
 
         text = "Timer successfully cancelled!" if job_removed else "You have no active timer."
         await context.bot.send_message(chat_id=self.__name, text=text)
+
+
+__all__ = ('Scheduler',)
