@@ -3,82 +3,22 @@ from clients.commons import Js_worker, Requests
 import asyncio
 from bs4 import BeautifulSoup
 
-
-def manhwax(soup: BeautifulSoup, data: dict) -> dict:
-    chapters = soup.find('div', {"class": "eplister", "id": "chapterlist"}).find('ul').find_all('li')
-
-    data["all_chapters"].clear()
-    for chapter in chapters:
-        data["all_chapters"].append(chapter.find('a')['href'])
-
-    data["name"] = soup.find('h1', {"class": "entry-title", "itemprop": "name"}).text
-    data["rate"] = float(soup.find('div', {"class": "num", "itemprop": "ratingValue"}).text)
-    data["cover_url"] = soup.find('img', {'class': 'attachment- size- wp-post-image', 'alt': data["name"]})['src']
-
-    return data
-
-
-def mangahentai(soup: BeautifulSoup, data: dict) -> dict:
-    chapters = soup.find('div', {"class": "eplister", "id": "chapterlist"}).find('ul').find_all('li')
-
-    data["all_chapters"].clear()
-    for chapter in chapters:
-        data["all_chapters"].append(chapter.find('a')['href'])
-
-    data["name"] = soup.find('h1').text.split('\n')[-1]
-    data["rate"] = float(soup.find("span", class_="score font-meta total_votes").text) * 2
-    data["cover_url"] = soup.find('img', class_="img-responsive")['src']
-
-    return data
-
-
-def madaradex(soup: BeautifulSoup, data: dict) -> dict:
-    return data
-
-
-def chapmanganato(soup: BeautifulSoup, data: dict) -> dict:
-    chapters = soup.find("ul", class_="row-content-chapter").find_all('li')
-
-    data["all_chapters"].clear()
-    for chapter in chapters:
-        data["all_chapters"].append(chapter.find('a')['href'] + '/')
-
-    data["name"] = soup.find('h1').text.split('\n')[-1]
-    data["rate"] = float(soup.find('em', {'property': "v:average"}).text) * 2
-    data["cover_url"] = soup.find("img", class_="img-loading")['src']
-
-    return data
-
-
-def comixextra(soup: BeautifulSoup, data: dict) -> dict:
-    chapters = soup.find("tbody", {"id": "list", "offset": "0"}).find_all('td')
-
-    data["all_chapters"].clear()
-    for chapter in chapters:
-        if chapter.find('a'):
-            data["all_chapters"].append(chapter.find('a')['href'] + '/')
-
-    name = soup.find('h1', class_="movie-title mobile-hide").find('span').text.split('\n')
-    new_name = [n for n in name[1].split(' ') if n]
-    data["name"] = ' '.join(new_name)
-    data["rate"] = None
-    data["cover_url"] = soup.find("img", {'alt': data['name']})['src']
-
-    return data
+from clients.web_sites.web_clients import manhwax, mangahentai, chapmanganato, comixextra
 
 
 class Client:
-    def __init__(self, name: str):
+    def __init__(self, name: str, urls: list[str] = None):
         self._new_chapters_dict = {}
         self.__comics_res = None
-        self.urls = None
+        self.urls = urls
         self.name = name
         self._setter()
 
     def _setter(self):
         self.user = Js_worker(name=self.name)
         if data := self.user.read():
-            self.urls = list(data.keys())
+            if self.urls is None:
+                self.urls = list(data.keys())
             self.data: dict = data
         else:
             raise ValueError('invalid person')
@@ -90,17 +30,15 @@ class Client:
 
         match url_type:
             case 'manhwax':
-                self.data[url] = manhwax(soup, data=self.data[url])
+                self.data[url] = manhwax.comic_main_page(soup, data=self.data[url])
             case 'mangahentai':
-                self.data[url] = mangahentai(soup, data=self.data[url])
+                self.data[url] = mangahentai.comic_main_page(soup, data=self.data[url])
             case 'mangaread':
-                self.data[url] = mangahentai(soup, data=self.data[url])
-            case 'madaradex':
-                self.data[url] = madaradex(soup, data=self.data[url])
+                self.data[url] = mangahentai.comic_main_page(soup, data=self.data[url])
             case 'chapmanganato':
-                self.data[url] = chapmanganato(soup, data=self.data[url])
+                self.data[url] = chapmanganato.comic_main_page(soup, data=self.data[url])
             case 'comixextra':
-                self.data[url] = comixextra(soup, data=self.data[url])
+                self.data[url] = comixextra.comic_main_page(soup, data=self.data[url])
 
         last_one = self.data[url]["last_chapter"]
         last_chapter = self.data[url]["last_chapter"] = self.data[url]["all_chapters"][0]
@@ -115,11 +53,11 @@ class Client:
 
             if num > 0:
                 self.data[url]["new_chapters"] = self.data[url]["all_chapters"][:num]
-                self._new_chapters_dict[url] = self.data[url]["all_chapters"][:num]
+                self._new_chapters_dict[self.data[url]["name"]] = self.data[url]["all_chapters"][:num]
             else:
                 self.data[url]["new_chapters"] = []
         else:
-            self.data[url]["new_chapters"] = self.data[url]["last_chapter"]
+            self._new_chapters_dict[self.data[url]["name"]] = self.data[url]["new_chapters"] = [last_chapter]
 
     async def main_pages_update(self):
         self.__comics_res = await Requests().aget(self.urls)
@@ -132,11 +70,11 @@ class Client:
     def new_chapters(self):
         return self._new_chapters_dict
 
-    def get(self) -> list:
+    def get(self) -> tuple:
         urls: list = []
         for d in self.data:
             urls.append(d)
-        return urls
+        return urls, self.data
 
     async def run(self):
         await self.main_pages_update()
