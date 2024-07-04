@@ -14,7 +14,7 @@ async def check_comics_command(update: Update, context: ContextTypes.DEFAULT_TYP
                 text0 = f"new chapters for {comic} :\n"
                 text1 = [one for one in comics[comic]]
                 text = text0 + '\n'.join(text1)
-                await update.message.reply_text(text, parse_mode='Html')
+                await update.message.reply_text(text)
         else:
             await update.message.reply_text('no new chapter')
 
