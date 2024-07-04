@@ -41,23 +41,20 @@ class Client:
                 self.data[url] = comixextra.comic_main_page(soup, data=self.data[url])
 
         last_one = self.data[url]["last_chapter"]
-        last_chapter = self.data[url]["last_chapter"] = self.data[url]["all_chapters"][0]
 
         if last_one:
-            try:
-                num = int(
-                    float(last_chapter.split('/')[-2].split('-')[-2]) - float(last_one.split('/')[-2].split('-')[-2]))
-            except ValueError:
-                num = int(
-                    float(last_chapter.split('/')[-2].split('-')[-1]) - float(last_one.split('/')[-2].split('-')[-1]))
-
-            if num > 0:
+            all_chapters_len = len(self.data[url]["all_chapters"])
+            num = (all_chapters_len - self.data[url]["all_chapters"].index(self.data[url]["last_chapter"]))
+            self.data[url]["last_chapter"] = self.data[url]["all_chapters"][0]
+            print(all_chapters_len - num)
+            if (all_chapters_len - num) > 0:
                 self.data[url]["new_chapters"] = self.data[url]["all_chapters"][:num]
+                print(self.data[url]["all_chapters"][:num])
                 self._new_chapters_dict[self.data[url]["name"]] = self.data[url]["all_chapters"][:num]
             else:
                 self.data[url]["new_chapters"] = []
         else:
-            self._new_chapters_dict[self.data[url]["name"]] = self.data[url]["new_chapters"] = [last_chapter]
+            self.data[url]["new_chapters"] = []
 
     async def main_pages_update(self):
         self.__comics_res = await Requests().aget(self.urls)
