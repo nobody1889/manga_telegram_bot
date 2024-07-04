@@ -4,42 +4,61 @@ from telegram import Update, InlineQueryResultArticle, InputTextMessageContent, 
     InlineKeyboardButton
 from telegram.ext import ContextTypes
 
-from stuff import show_comics, read_new_from_file
+from stuff import show_comics, read_new_from_file, valid_sites
 from clients.commons import Requests
 
 inline_query_buttons = [
     'my_comics',
-    'my_new_chapters',
-    'search',
-
+    'my_new_chapters'
 ]
+sites = [site.split('/')[-2].split('.')[0] for site in valid_sites]
 
 
-async def generator(link, action, update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    action = context.user_data.get("action")
     if action == 'my_comics':
         comics = show_comics(name=str(update.effective_user.id))
         comic = comics[link]
+        context.user_data["download"] = comic['name']
         await update.message.reply_photo(
             photo=comic["cover_url"],
-            caption=comic["name"],
+            caption=
+            f'name: {comic["name"]}\n\nrate: {comic["rate"]}\n\n status: {comic["status"]}\n\n tags: {comic["genres"]}',
             reply_markup=InlineKeyboardMarkup(
                 [
-                    [InlineKeyboardButton("first chapter", url=comic["all_chapters"][-1])],
-                    [InlineKeyboardButton("last chapter", url=comic["all_chapters"][0])]
+                    [InlineKeyboardButton("first chapter", url=comic["all_chapters"][-1]),
+                     InlineKeyboardButton("last chapter", url=comic["all_chapters"][0])],
+                    [InlineKeyboardButton("got to download", callback_data="download")]
                 ]
             )
         )
     elif action == 'my_new_chapters':
         all_news: dict = read_new_from_file(user=str(update.effective_user.id))
-        news = all_news[link]["new_chapters"]
-        keys = [f"<a href={one}>{num}</a> " for num, one in enumerate(news)]
-        await update.message.reply_html(
-            text='\n'.join(keys)
+        the_comic: dict = all_news[link]
+        new_chapters: list = the_comic["new_chapters"]
+        keys = []
+
+        for num, chapter in enumerate(new_chapters):
+            text = f'{len(new_chapters) - num}'
+            context.user_data.update({"download": [link, the_comic["all_chapters"].index(chapter)]})
+            keys.append(
+                [
+                    InlineKeyboardButton(text=f"read {text}", url=chapter),
+                    InlineKeyboardButton(text=f"download {text}", callback_data="download")
+
+                ])
+
+        await update.message.reply_photo(
+            photo=the_comic["cover_url"],
+            caption=
+            f'name: {the_comic["name"]}\n\nrate: {the_comic["rate"]}\n\n status: {the_comic["status"]}\n\n tags: {the_comic["genres"]}\n\n new chapters',
+            reply_markup=InlineKeyboardMarkup(keys)
         )
 
     elif action == 'search':
         await update.message.reply_text(text='this feature will add soon')
-    # context.user_data["action"] = None
+
+    context.user_data["action"] = None
 
 
 async def my_comics(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -61,8 +80,8 @@ async def my_comics(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     ),
                     thumbnail_url=all_comics[comic_name]["cover_url"],
                 ))
-        print('local: ', context.user_data['action'])
-        await update.inline_query.answer(results)
+
+        await update.inline_query.answer(results, cache_time=0)
     except ValueError:
         await context.bot.send_message(chat_id=name, text='use </start> to add comics')
 
@@ -86,14 +105,23 @@ async def my_new_chapters(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     thumbnail_url=all_comics[comic_name]["cover_url"],
                 ))
 
-        print(context.user_data['action'])
-        await update.inline_query.answer(results)
+        await update.inline_query.answer(results, cache_time=0)
     else:
         await context.bot.send_message(chat_id=name, text='nothing to show\nfirst get </check>')
 
 
-async def search(update: Update, context: ContextTypes):
-    pass
+async def search_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE, no: bool = True):
+    if no:
+        buttons = [[InlineKeyboardButton(text=site, callback_data=site)] for site in sites]
+
+        await update.message.reply_text(text='choose on website', reply_markup=InlineKeyboardMarkup(buttons))
+    else:
+        await context.bot.send_message(chat_id=update.effective_user.id, text=context.user_data.get("action"))
+    context.user_data["action"] = None
+
+
+async def search_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_message(chat_id=update.effective_user.id, text='hello dog')
 
 
 async def all_new_chapters():
