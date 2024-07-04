@@ -34,8 +34,10 @@ class Js_worker:
                 url: {
                     'type': url.split('/')[2].split('.')[0],  # which website
                     'name': '',
+                    'status': '',
                     'cover_url': '',  # cover of the comic
                     'rate': 0,  # rating of comic
+                    'genres': [],
                     'last_chapter': '',
                     'all_chapters': [],
                     'new_chapters': []
