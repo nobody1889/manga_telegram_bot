@@ -10,6 +10,15 @@ valid_sites = [
 ]
 
 
+def check(name: str):
+    one = os.getcwd()
+    path: str = one + '/js_holder/' + name + '.json'
+    if os.path.exists(path):
+        return True
+
+    return False
+
+
 def valid_urls(url: str):
     urls = url.split('\n')
 
@@ -58,15 +67,19 @@ async def search_new(user: str, urls: list[str] = None) -> dict:
     return news
 
 
+def read_new_from_file(user: str) -> dict:
+    if check(user):
+        my_dict: dict = {}
+        user = Js_worker(name=user)
+        if all_data := user.read():
+            for data in all_data:
+                if all_data[data]["new_chapters"]:
+                    my_dict.update({data: all_data[data]})
+        return my_dict
+    else:
+        raise ValueError('Invalid person')
+
+
 def show_comics(name: str) -> dict:
     person = Client(name=name)
     return person.data
-
-
-def check(name: str):
-    one = os.getcwd()
-    path: str = one + '/js_holder/' + name + '.json'
-    if os.path.exists(path):
-        return True
-
-    return False
