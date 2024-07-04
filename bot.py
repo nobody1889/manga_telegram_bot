@@ -4,7 +4,8 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Callb
 
 from stuff import valid_sites, add_url, remove_url, show_comics, check
 from telegram_bot_properties import *
-from telegram_bot_properties.inline_part import my_comics, inline_query_buttons, my_new_chapters, generator
+from telegram_bot_properties.inline_part import my_comics, inline_query_buttons, my_new_chapters, generator, \
+    search_buttons, search_query, sites
 
 Token = '6968670681:AAEY1wqMF9zGCvsMMty3PXrPGO2wPuAe-ts'
 local_keyboard = ['search', 'my comics', 'check for new chapters', "kill"]
@@ -12,12 +13,14 @@ ADMIN_USER_ID = 5519596138
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["action"] = None
     reply_markup = ReplyKeyboardMarkup([['search'], ['my comics', 'check for new chapters']], one_time_keyboard=True)
     await context.bot.send_message(chat_id=update.effective_message.chat_id, reply_markup=reply_markup,
                                    text='welcome\n please use </help> if you are new')
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["action"] = None
     user = update.message.from_user
 
     text_part = '\n'.join(valid_sites)
@@ -40,7 +43,6 @@ async def show_main_menu(update: Update, context: CallbackContext) -> None:
              InlineKeyboardButton("Remove Comics", callback_data='remove_url')],
             [InlineKeyboardButton("My Comics", switch_inline_query_current_chat="my_comics")],
             [InlineKeyboardButton('New Chapters', switch_inline_query_current_chat="my_new_chapters")]
-
         ]
     else:
         keyboard = [
@@ -54,23 +56,29 @@ async def button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     await query.answer()
     action = query.data
-    print('button')
-    match action:
-        case 'send_url':
-            await query.edit_message_text(text="Please send me the URL.")
-            context.user_data["action"] = 'receive_url'
-        case 'remove_url':
-            await query.edit_message_text(text="Please specify the URL to remove.\n(or all via <all>)")
-            context.user_data["action"] = 'remove'
-        case 'set_time':
-            context.user_data["action"] = 'set_time'
+
+    if action in sites:
+        context.user_data["action"] = action
+        await search_buttons(update, context, False)
+
+    else:
+        match action:
+            case 'send_url':
+                await query.edit_message_text(text="Please send me the URL.")
+                context.user_data["action"] = 'receive_url'
+            case 'remove_url':
+                await query.edit_message_text(text="Please specify the URL to remove.\n(or all via <all>)")
+                context.user_data["action"] = 'remove'
+            case 'set_time':
+                context.user_data["action"] = 'set_time'
+            case 'download':
+                await context.bot.send_message(chat_id=update.effective_user.id, text="this option will add soon")
+                print(context.user_data["download"])
 
 
 async def handle_url(update: Update, context: CallbackContext) -> None:
     text = update.message.text
     action = context.user_data.get("action")
-    print('action: ', action)
-    print('text: ', text)
     if action in ['remove', 'receive_url', 'set_time']:
         match action:
             case 'remove':
@@ -100,18 +108,17 @@ async def handle_url(update: Update, context: CallbackContext) -> None:
                     context.user_data["action"] = None
 
     elif action in inline_query_buttons:
-        print('generator')
-        await generator(link=text, action=action, update=update, context=context)
-        context.user_data["action"] = None
+        await generator(link=text, update=update, context=context)
 
     elif text.lower() in local_keyboard:
         match text.lower():
             case 'search':
-                context.user_data["action"] = None
+                await search_buttons(update, context)
 
             case 'my comics':
                 await show_main_menu(update, context)
-
+            case 'check for new chapters':
+                await check_comics_command(update, context)
             case 'kill':
                 if update.effective_user.id == ADMIN_USER_ID:
                     await update.message.reply_text('you killed the bot 💀')
@@ -135,17 +142,23 @@ if __name__ == '__main__':
     handle_url_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, handle_url)
 
     inline_query_handler_my_comics = InlineQueryHandler(callback=my_comics, pattern='my_comics')
+
     inline_query_handler_my_new_chapters = InlineQueryHandler(callback=my_new_chapters, pattern="my_new_chapters")
+
+    inline_query_handler_search_new = InlineQueryHandler(callback=search_query, pattern='new')
+    inline_query_handler_search_name = InlineQueryHandler(callback=search_query, pattern='name')
 
     application.add_handler(start_handler)
     application.add_handler(help_handler)
     application.add_handler(check_handler)
+
     button_handler = CallbackQueryHandler(button)
     application.add_handler(button_handler)
     application.add_handlers(handlers=[my_scheduler, CallbackQueryHandler(scheduler.schedule_button)])
 
     application.add_handler(inline_query_handler_my_comics)
     application.add_handler(inline_query_handler_my_new_chapters)
+    application.add_handler(inline_query_handler_search_name)
 
     application.add_handler(handle_url_handler)
 
