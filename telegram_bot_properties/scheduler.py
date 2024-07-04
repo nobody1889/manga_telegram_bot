@@ -88,11 +88,14 @@ class Scheduler:
             return False
 
     async def show_time(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        await context.bot.send_message(chat_id=self.__name, text=str(self.__due.hour))
+        if self.__due is not None:
+            await context.bot.send_message(chat_id=self.__name, text=(str(int(self.__due / (60 * 60 * 24)))) + ' hour')
+        else:
+            await context.bot.send_message(chat_id=self.__name, text='please set one time')
 
     async def unset(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         job_removed = self.remove_job_if_exists(context)
-
+        self.__due = None
         self.time_is_set = False
 
         text = "Timer successfully cancelled!" if job_removed else "You have no active timer."
