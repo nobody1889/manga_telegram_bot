@@ -60,7 +60,8 @@ async def button(update: Update, context: CallbackContext) -> None:
     if action in sites:
         context.user_data["action"] = action
         await search_buttons(update, context, False)
-
+    elif action in ['remove_time', 'set_time', 'show_time']:
+        await scheduler.schedule_button(update, context)
     else:
         match action:
             case 'send_url':
@@ -69,8 +70,6 @@ async def button(update: Update, context: CallbackContext) -> None:
             case 'remove_url':
                 await query.edit_message_text(text="Please specify the URL to remove.\n(or all via <all>)")
                 context.user_data["action"] = 'remove'
-            case 'set_time':
-                context.user_data["action"] = 'set_time'
             case 'download':
                 await context.bot.send_message(chat_id=update.effective_user.id, text="this option will add soon")
                 print(context.user_data["download"])
@@ -79,6 +78,7 @@ async def button(update: Update, context: CallbackContext) -> None:
 async def handle_url(update: Update, context: CallbackContext) -> None:
     text = update.message.text
     action = context.user_data.get("action")
+    
     if action in ['remove', 'receive_url', 'set_time']:
         match action:
             case 'remove':
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     application.add_handler(start_handler)
     application.add_handler(help_handler)
     application.add_handler(check_handler)
-    application.add_handlers(handlers=[my_scheduler, CallbackQueryHandler(scheduler.schedule_button)])
+    application.add_handler(my_scheduler)
 
     button_handler = CallbackQueryHandler(button)
     application.add_handler(button_handler)
