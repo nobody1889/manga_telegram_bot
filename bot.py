@@ -151,10 +151,10 @@ if __name__ == '__main__':
     application.add_handler(start_handler)
     application.add_handler(help_handler)
     application.add_handler(check_handler)
+    application.add_handlers(handlers=[my_scheduler, CallbackQueryHandler(scheduler.schedule_button)])
 
     button_handler = CallbackQueryHandler(button)
     application.add_handler(button_handler)
-    application.add_handlers(handlers=[my_scheduler, CallbackQueryHandler(scheduler.schedule_button)])
 
     application.add_handler(inline_query_handler_my_comics)
     application.add_handler(inline_query_handler_my_new_chapters)
