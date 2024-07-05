@@ -30,8 +30,7 @@ class Scheduler:
         match response:
             case 'set_time':
                 context.user_data["action"] = 'set_time'
-                await context.bot.send_message(chat_id=self.__name, text='pleas enter the time like '
-                                                                         'blow:\n<hour>')
+                await query.edit_message_text(text='pleas enter the time like blow:\n<hour>')
             case 'remove_time':
                 await self.unset(update, context)
             case 'show_time':
@@ -63,7 +62,7 @@ class Scheduler:
         if not self.__name:
             self.__name = str(update.effective_message.chat_id)
         try:
-            self.__due = int(local_time) * 60 * 60 * 24
+            self.__due = int(local_time) * 60 * 60
 
             if self.__due <= 0:
                 await context.bot.send_message(chat_id=self.__name, text="Sorry we can't accept the number")
