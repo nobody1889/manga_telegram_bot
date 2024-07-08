@@ -7,3 +7,4 @@ This features will add soon:
 <br>.ability to read in telegram(maybe)
 
 the bot --> @comicr_bot (https://t.me/comicr_bot)
+I didn't update the bot yet
