@@ -4,7 +4,7 @@ from clients.commons import Js_worker
 from clients.web_sites import Client
 
 valid_sites = [
-    # 'https://manhwax.org/',
+    'https://manhwax.org/',
     'https://chapmanganato.to/',
     'https://comixextra.com/',
 ]
