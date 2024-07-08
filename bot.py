@@ -65,7 +65,7 @@ async def button(update: Update, context: CallbackContext) -> None:
         await update.callback_query.edit_message_reply_markup(
             reply_markup=InlineKeyboardMarkup(
                 [
-                    [InlineKeyboardButton(text="search", switch_inline_query_current_chat="search")],
+                    [InlineKeyboardButton(text="search", switch_inline_query_current_chat="")],
                     [InlineKeyboardButton(text="add new comic", switch_inline_query_current_chat="new")]
                  ]
             )
@@ -157,7 +157,7 @@ if __name__ == '__main__':
     inline_query_handler_my_new_chapters = InlineQueryHandler(callback=my_new_chapters, pattern="my_new_chapters")
 
     inline_query_handler_search_new = InlineQueryHandler(callback=new_comic, pattern='new')
-    inline_query_handler_search_name = InlineQueryHandler(callback=search_query, pattern="search")
+    inline_query_handler_search_name = InlineQueryHandler(callback=search_query, pattern="")
 
     application.add_handler(start_handler)
     application.add_handler(help_handler)
