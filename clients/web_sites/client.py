@@ -3,7 +3,7 @@ from clients.commons import Js_worker, Requests
 import asyncio
 from bs4 import BeautifulSoup
 
-from clients.web_sites.web_clients import manhwax, mangahentai, chapmanganato, comixextra
+from clients.web_sites.web_clients import manhwax, chapmanganato, comixextra
 
 
 class Client:
@@ -31,10 +31,6 @@ class Client:
         match url_type:
             case 'manhwax':
                 self.data[url] = manhwax.comic_main_page(soup, data=self.data[url])
-            case 'mangahentai':
-                self.data[url] = mangahentai.comic_main_page(soup, data=self.data[url])
-            case 'mangaread':
-                self.data[url] = mangahentai.comic_main_page(soup, data=self.data[url])
             case 'chapmanganato':
                 self.data[url] = chapmanganato.comic_main_page(soup, data=self.data[url])
             case 'comixextra':
