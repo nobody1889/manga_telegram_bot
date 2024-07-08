@@ -5,7 +5,7 @@ from telegram import Update, InlineQueryResultArticle, InputTextMessageContent, 
 from telegram.ext import ContextTypes
 
 from stuff import show_comics, read_new_from_file, valid_sites
-from clients.commons import Requests
+from clients.web_sites.web_clients import manhwax, chapmanganato, comixextra
 
 inline_query_buttons = [
     'my_comics',
@@ -13,6 +13,10 @@ inline_query_buttons = [
 ]
 sites = [site.split('/')[-2].split('.')[0] for site in valid_sites]
 
+LIMIT_SIZE_OF_ITEMS_QUERY: int = 0
+
+
+# ACTION: str = ""
 
 async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
     action = context.user_data.get("action")
@@ -22,8 +26,9 @@ async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["download"] = comic['name']
         await update.message.reply_photo(
             photo=comic["cover_url"],
-            caption=
-            f'name: {comic["name"]}\n\nrate: {comic["rate"]}\n\n status: {comic["status"]}\n\n tags: {comic["genres"]}',
+            caption=f"""
+            name: {comic["name"]}\n\nrate: {comic["rate"]}\n\nstatus: {comic["status"]}\n\n tags: {comic["genres"]}
+            """,
             reply_markup=InlineKeyboardMarkup(
                 [
                     [InlineKeyboardButton("first chapter", url=comic["all_chapters"][-1]),
@@ -50,8 +55,17 @@ async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_photo(
             photo=the_comic["cover_url"],
-            caption=
-            f'name: {the_comic["name"]}\n\nrate: {the_comic["rate"]}\n\n status: {the_comic["status"]}\n\n tags: {the_comic["genres"]}\n\n new chapters',
+            caption=f"""
+            name: {the_comic["name"]}
+            
+            rate: {the_comic["rate"]}
+            
+            status: {the_comic["status"]}
+            
+            tags: {the_comic["genres"]}
+            
+            new chapters
+            """,
             reply_markup=InlineKeyboardMarkup(keys)
         )
 
@@ -61,10 +75,10 @@ async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["action"] = None
 
 
-async def my_comics(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def my_comics_inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE, action: str):
     name = update.effective_user.id
     try:
-        context.user_data['action'] = 'my_comics'
+        context.user_data['action'] = action
         all_comics: dict = show_comics(name=str(name))
 
         results = []
@@ -84,6 +98,14 @@ async def my_comics(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.inline_query.answer(results, cache_time=0)
     except ValueError:
         await context.bot.send_message(chat_id=name, text='use </start> to add comics')
+
+
+async def my_comics(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await my_comics_inline_query(update, context, 'my_comics')
+
+
+async def remove_my_comics(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await my_comics_inline_query(update, context, 'remove_comics')
 
 
 async def my_new_chapters(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -112,25 +134,94 @@ async def my_new_chapters(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def search_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE, no: bool = True):
     if no:
-        buttons = [[InlineKeyboardButton(text=site, callback_data=site)] for site in sites]
+        buttons = [
+            [InlineKeyboardButton(text=site, callback_data=site)
+             ] for site in sites]
 
-        await update.message.reply_text(text='choose on website', reply_markup=InlineKeyboardMarkup(buttons))
+        await update.message.reply_photo(
+            photo="profile.jpg",
+            caption='choose one website',
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
     else:
         await context.bot.send_message(chat_id=update.effective_user.id, text=context.user_data.get("action"))
-    context.user_data["action"] = None
+    # context.user_data["action"] = None
+
+
+def which_site(website: str):
+    match website:
+        case "manhwax":
+            return manhwax
+        case "chapmanganato":
+            return chapmanganato
+        case "comixextra":
+            return comixextra
+
+
+async def fetch_search(cls, name: str, limit: int = LIMIT_SIZE_OF_ITEMS_QUERY,
+                       offset: int = 0) -> dict:  # cls is the class actually
+    searched_data: dict = await cls.search(text=name, page=(offset // limit))
+    return searched_data
+
+
+async def fetch_new(cls, limit: int = LIMIT_SIZE_OF_ITEMS_QUERY, offset: int = 0) -> dict:  # cls is the class actually
+    new_data: dict = await cls.new_comics(page=(offset // limit))
+    return new_data
 
 
 async def search_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_user.id, text='hello dog')
+    global LIMIT_SIZE_OF_ITEMS_QUERY
+
+    website_name = context.user_data.get("action")
+    cls = which_site(website_name)()  # class object
+    name = update.inline_query.query
+
+    LIMIT_SIZE_OF_ITEMS_QUERY = cls.limit_search
+
+    offset = int(update.inline_query.offset or 0)
+    data_batch = await fetch_search(offset=offset, cls=cls, name=name, limit=LIMIT_SIZE_OF_ITEMS_QUERY)
+
+    results = [
+        InlineQueryResultArticle(
+            id=str(uuid4()),
+            title=data_batch[item]["name"],
+            input_message_content=InputTextMessageContent(
+                message_text=item,
+                disable_web_page_preview=True
+            ),
+            thumbnail_url=data_batch[item]["cover"]
+        ) for item in data_batch
+    ]
+
+    next_offset = str(offset + LIMIT_SIZE_OF_ITEMS_QUERY) if len(data_batch) == LIMIT_SIZE_OF_ITEMS_QUERY else ''
+    # context.user_data["action"] = "search"
+    await update.inline_query.answer(results, cache_time=0, next_offset=next_offset, read_timeout=10)
 
 
-async def all_new_chapters():
-    pass
+async def new_comic(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global LIMIT_SIZE_OF_ITEMS_QUERY
 
+    website_name = context.user_data.get("action")
+    cls = which_site(website_name)  # class object
 
-async def all_popular_chapters():
-    pass
+    LIMIT_SIZE_OF_ITEMS_QUERY = cls.limit_new
+    print("LIMIT_SIZE_OF_ITEMS_QUERY : ", LIMIT_SIZE_OF_ITEMS_QUERY)
 
+    offset = int(update.inline_query.offset or 0)
+    data_batch = await fetch_new(offset=offset, cls=cls, limit=LIMIT_SIZE_OF_ITEMS_QUERY)
 
-async def button_inline():
-    pass
+    results = [
+        InlineQueryResultArticle(
+            id=str(uuid4()),
+            title=data_batch[item]["name"],
+            input_message_content=InputTextMessageContent(
+                message_text=item,
+                disable_web_page_preview=True
+            ),
+            thumbnail_url=data_batch[item]["cover"]
+        ) for item in data_batch
+    ]
+
+    next_offset = str(offset + LIMIT_SIZE_OF_ITEMS_QUERY) if len(data_batch) == LIMIT_SIZE_OF_ITEMS_QUERY else ''
+    # context.user_data["action"] = "search"
+    await update.inline_query.answer(results, cache_time=0, next_offset=next_offset, read_timeout=10)
