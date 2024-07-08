@@ -7,4 +7,8 @@ This features will add soon:
 <br>.ability to read in telegram(maybe)
 
 the bot --> @comicr_bot (https://t.me/comicr_bot)
-I didn't update the bot yet
+
+supported websites :
+<br>https://manhwax.org/ (don't use this one if you are not +18)
+<br>'https://chapmanganato.to/
+<br>'https://comixextra.com/
