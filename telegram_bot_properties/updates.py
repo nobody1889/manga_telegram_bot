@@ -2,7 +2,7 @@ import httpx
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from stuff import search_new
+from stuff import search_new, add_url
 
 
 async def check_comics_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -25,4 +25,13 @@ async def check_comics_command(update: Update, context: ContextTypes.DEFAULT_TYP
         await update.message.reply_text('please try again')
 
 
-__all__ = ('check_comics_command',)
+async def add_new_comics(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str):
+    valued, invalid = await add_url(text, user=str(update.message.from_user.id))
+    if valued:
+        await context.bot.send_message(chat_id=str(update.effective_user.id), text=f'LINKs received: \n{valued}')
+
+    if invalid:
+        await context.bot.send_message(chat_id=str(update.effective_user.id), text=f'invalid LINK: \n{invalid}')
+
+
+__all__ = ('check_comics_command', 'add_new_comics')
