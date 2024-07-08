@@ -4,12 +4,15 @@ import httpx
 
 async def request(url: str) -> BeautifulSoup:
     client = httpx.AsyncClient()
-    res = await client.get(url)
+    res = await client.get(url, timeout=10)
 
     return BeautifulSoup(res.content, "lxml")
 
 
 class manhwax:
+    limit_search: int = 10
+    limit_new: int = 20
+
     @staticmethod
     def comic_main_page(soup: BeautifulSoup, data: dict) -> dict:
         chapters = soup.find('div', {"class": "eplister", "id": "chapterlist"}).find('ul').find_all('li')
@@ -30,13 +33,15 @@ class manhwax:
     @staticmethod
     async def new_comics(page: int = 0, comics=None) -> dict:
         if comics is None:
-            base_url = f"https://manhwax.org/page/{page}/"
-            soup = await request(base_url)
+            if page == 0:
+                base_url = "https://manhwax.org/"
+            else:
+                base_url = f"https://manhwax.org/page/{page + 1}/"
 
+            soup = await request(base_url)
             comics = soup.find_all("div", class_="bs styletere")
 
         comics_info: dict = {}
-
         for comic in comics:
             comic_url = comic.find('a')["href"]
             comics_info[comic_url] = {}
@@ -45,9 +50,9 @@ class manhwax:
 
         return comics_info
 
-    async def search(self, text: str) -> dict:
+    async def search(self, text: str, page: int = 0) -> dict:
         name = "+".join(text.split(" "))
-        search_url = f"https://manhwax.org/?s=porn+hub"
+        search_url = f"https://manhwax.org/page/{page + 1}/?s={name}"
         soup = await request(search_url)
 
         body = soup.find("div", class_="listupd")
@@ -62,6 +67,9 @@ class manhwax:
 
 
 class chapmanganato:
+    limit_search: int = 20
+    limit_new: int = 24
+
     @staticmethod
     def comic_main_page(soup: BeautifulSoup, data: dict) -> dict:
         chapters = soup.find("ul", class_="row-content-chapter").find_all('li')
@@ -83,7 +91,10 @@ class chapmanganato:
     @staticmethod
     async def new_comics(page: int = 0, comics=None) -> dict:
         if comics is None:
-            base_url = f"https://manganato.com/genre-all/{page}"
+            if page == 0:
+                base_url = f"https://manganato.com/genre-all"
+            else:
+                base_url = f"https://manganato.com/genre-all/{page + 1}"
             soup = await request(base_url)
 
             comics = soup.find_all("div", class_="content-genres-item")
@@ -98,9 +109,9 @@ class chapmanganato:
 
         return comics_info
 
-    async def search(self, text: str) -> dict:
+    async def search(self, text: str, page: int = 0) -> dict:
         name = "_".join(text.split(" "))
-        search_url = f"https://manganato.com/search/story/{name}"
+        search_url = f"https://manganato.com/search/story/{name}?page={page + 1}"
         soup = await request(search_url)
 
         comics = soup.find_all("div", class_="search-story-item")
@@ -114,6 +125,9 @@ class chapmanganato:
 
 
 class comixextra:
+    limit_search: int = 25
+    limit_new: int = 50
+
     @staticmethod
     def comic_main_page(soup: BeautifulSoup, data: dict) -> dict:
         chapters = soup.find("tbody", {"id": "list", "offset": "0"}).find_all('td')
@@ -137,7 +151,7 @@ class comixextra:
     @staticmethod
     async def new_comics(page: int = 0, comics=None) -> dict:
         if comics is None:
-            base_url = f"https://comixextra.com/comic-updates/{page}"
+            base_url = f"https://comixextra.com/comic-updates/{page + 1}"
             soup = await request(base_url)
 
             comics = soup.find_all("div", class_="hl-box")
@@ -152,9 +166,10 @@ class comixextra:
 
         return comics_info
 
-    async def search(self, text: str):
+    async def search(self, text: str, page: int = 0):
         name = "+".join(text.split(" "))
-        search_url = f"https://comixextra.com/search?keyword={name}"
+        search_url = f"https://comixextra.com/search?keyword={name}&page={page + 1}"
+
         soup = await request(search_url)
 
         comics = soup.find_all("div", class_="cartoon-box")
