@@ -61,7 +61,7 @@ async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
                 callback_data=f"download-{the_comic['name']}-all_chapters-:{len(the_comic['new_chapters'])}"
             )
         ])
-        print(keys)
+
         context.user_data["comic_name"] = link
         await update.message.reply_photo(
             photo=the_comic["cover_url"],
