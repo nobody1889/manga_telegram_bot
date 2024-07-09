@@ -2,11 +2,16 @@ from bs4 import BeautifulSoup
 import httpx
 
 
-async def request(url: str) -> BeautifulSoup:
+async def request(url: str, bfs: bool = True) -> BeautifulSoup | bytes:
     client = httpx.AsyncClient()
     res = await client.get(url, timeout=10)
 
-    return BeautifulSoup(res.content, "lxml")
+    res.raise_for_status()
+
+    if bfs:
+        return BeautifulSoup(res.content, "lxml")
+    else:
+        return res.content
 
 
 class manhwax:
@@ -64,6 +69,10 @@ class manhwax:
 
         else:
             return {}
+
+    @staticmethod
+    async def get_comic_images(url: str) -> list[str]:
+        pass
 
 
 class chapmanganato:
@@ -123,6 +132,10 @@ class chapmanganato:
         else:
             return {}
 
+    @staticmethod
+    async def get_comic_images(url: str) -> list[str]:
+        pass
+
 
 class comixextra:
     limit_search: int = 25
@@ -179,3 +192,7 @@ class comixextra:
             return result_comics
         else:
             return {}
+
+    @staticmethod
+    async def get_comic_images(url: str) -> list[str]:
+        pass
