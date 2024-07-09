@@ -6,6 +6,8 @@ from stuff import valid_sites, remove_url, check
 from telegram_bot_properties import *
 from telegram_bot_properties.inline_part import my_comics, inline_query_buttons, my_new_chapters, generator, \
     search_buttons, search_query, sites, new_comic, remove_my_comics
+
+from telegram_bot_properties.downloader import *
 from telegram_bot_properties.updates import add_new_comics
 
 import re
@@ -13,7 +15,7 @@ import re
 Token = '6968670681:AAEY1wqMF9zGCvsMMty3PXrPGO2wPuAe-ts'
 local_keyboard = ['search', 'my comics', 'check for new chapters', "kill"]
 ADMIN_USER_ID = 5519596138
-download_pattern = re.compile("^download_")
+download_pattern = re.compile("^download-")
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -76,12 +78,16 @@ async def button(update: Update, context: CallbackContext) -> None:
         context.user_data["action"] = action
     elif action in ['remove_time', 'set_time', 'show_time']:
         await scheduler.schedule_button(update, context)
+
     elif action == 'send_url':
         await query.edit_message_text(text="Please send me the URL.")
         context.user_data["action"] = 'receive_url'
+
     elif re.match(pattern=download_pattern, string=action):
-        await context.bot.send_message(chat_id=update.effective_user.id, text="this option will add soon")
-        print("action : ", action)
+        await downloader(update=update, context=context, string=action)
+
+    # else:
+    #     await download_buttons(action=action, update=update, context=context)
 
 
 async def handle_url(update: Update, context: CallbackContext) -> None:
