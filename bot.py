@@ -8,9 +8,12 @@ from telegram_bot_properties.inline_part import my_comics, inline_query_buttons,
     search_buttons, search_query, sites, new_comic, remove_my_comics
 from telegram_bot_properties.updates import add_new_comics
 
+import re
+
 Token = '6968670681:AAEY1wqMF9zGCvsMMty3PXrPGO2wPuAe-ts'
 local_keyboard = ['search', 'my comics', 'check for new chapters', "kill"]
 ADMIN_USER_ID = 5519596138
+download_pattern = re.compile("^download_")
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -67,23 +70,18 @@ async def button(update: Update, context: CallbackContext) -> None:
                 [
                     [InlineKeyboardButton(text="search", switch_inline_query_current_chat="")],
                     [InlineKeyboardButton(text="add new comic", switch_inline_query_current_chat="new")]
-                 ]
+                ]
             )
         )
         context.user_data["action"] = action
     elif action in ['remove_time', 'set_time', 'show_time']:
         await scheduler.schedule_button(update, context)
-    else:
-        match action:
-            case 'send_url':
-                await query.edit_message_text(text="Please send me the URL.")
-                context.user_data["action"] = 'receive_url'
-            # case 'remove_url':
-            #     await query.edit_message_text(text="Please specify the URL to remove.\n(or all via <all>)")
-            #     context.user_data["action"] = 'remove'
-            case 'download':
-                await context.bot.send_message(chat_id=update.effective_user.id, text="this option will add soon")
-                print(context.user_data["download"])
+    elif action == 'send_url':
+        await query.edit_message_text(text="Please send me the URL.")
+        context.user_data["action"] = 'receive_url'
+    elif re.match(pattern=download_pattern, string=action):
+        await context.bot.send_message(chat_id=update.effective_user.id, text="this option will add soon")
+        print("action : ", action)
 
 
 async def handle_url(update: Update, context: CallbackContext) -> None:
@@ -106,36 +104,38 @@ async def handle_url(update: Update, context: CallbackContext) -> None:
 
             case 'receive_url':
                 await add_new_comics(update=update, context=context, text=text)
-
                 context.user_data["action"] = None
 
             case 'set_time':
                 if await scheduler.set_timer(text, update, context):
                     context.user_data["action"] = None
 
-    elif action in inline_query_buttons:
-        await generator(link=text, update=update, context=context)
-
-    elif action in sites:
-        await add_new_comics(update=update, context=context, text=text)
-
-        context.user_data["action"] = None
-
     elif text.lower() in local_keyboard:
+        context.user_data["action"] = None  # if user regret to send new comic this one make the last action nothing
+
         match text.lower():
             case 'search':
                 await search_buttons(update, context)
 
             case 'my comics':
                 await show_main_menu(update, context)
+
             case 'check for new chapters':
                 await check_comics_command(update, context)
+
             case 'kill':
                 if update.effective_user.id == ADMIN_USER_ID:
                     await update.message.reply_text('you killed the bot 💀')
                     application.stop_running()
                 else:
                     await update.message.reply_text("nop i can't understand 😞")
+
+    elif action in inline_query_buttons:
+        await generator(link=text, update=update, context=context)
+
+    elif action in sites:
+        await add_new_comics(update=update, context=context, text=text)
+        context.user_data["action"] = None
 
     else:
         await update.message.reply_text("nop i can't understand 😞")
