@@ -16,14 +16,12 @@ sites = [site.split('/')[-2].split('.')[0] for site in valid_sites]
 LIMIT_SIZE_OF_ITEMS_QUERY: int = 0
 
 
-# ACTION: str = ""
-
 async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
     action = context.user_data.get("action")
     if action == 'my_comics':
         comics = show_comics(name=str(update.effective_user.id))
         comic = comics[link]
-        context.user_data["download"] = comic['name']
+
         await update.message.reply_photo(
             photo=comic["cover_url"],
             caption=f"""
@@ -33,10 +31,13 @@ async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [
                     [InlineKeyboardButton("first chapter", url=comic["all_chapters"][-1]),
                      InlineKeyboardButton("last chapter", url=comic["all_chapters"][0])],
-                    [InlineKeyboardButton("got to download", callback_data="download")]
+                    [InlineKeyboardButton(
+                        "go to download", callback_data=f"download-{comic['name']}-all_chapters"
+                    )]
                 ]
             )
         )
+        context.user_data["comic_name"] = link
     elif action == 'my_new_chapters':
         all_news: dict = read_new_from_file(user=str(update.effective_user.id))
         the_comic: dict = all_news[link]
@@ -45,14 +46,23 @@ async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         for num, chapter in enumerate(new_chapters):
             text = f'{len(new_chapters) - num}'
-            context.user_data.update({"download": [link, the_comic["all_chapters"].index(chapter)]})
+
             keys.append(
                 [
                     InlineKeyboardButton(text=f"read {text}", url=chapter),
-                    InlineKeyboardButton(text=f"download {text}", callback_data="download")
+                    InlineKeyboardButton(
+                        text=f"download {text}", callback_data=f"download_{the_comic['name']}_new_chapters-{num}"
+                    )
 
                 ])
-
+        keys.append([
+            InlineKeyboardButton(
+                text="download all",
+                callback_data=f"download-{the_comic['name']}-all_chapters-:{len(the_comic['new_chapters'])}"
+            )
+        ])
+        print(keys)
+        context.user_data["comic_name"] = link
         await update.message.reply_photo(
             photo=the_comic["cover_url"],
             caption=f"""
@@ -68,9 +78,6 @@ async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
             """,
             reply_markup=InlineKeyboardMarkup(keys)
         )
-
-    elif action == 'search':
-        await update.message.reply_text(text='this feature will add soon')
 
     context.user_data["action"] = None
 
@@ -97,7 +104,7 @@ async def my_comics_inline_query(update: Update, context: ContextTypes.DEFAULT_T
 
         await update.inline_query.answer(results, cache_time=0)
     except ValueError:
-        await context.bot.send_message(chat_id=name, text='use </start> to add comics')
+        await context.bot.send_message(chat_id=name, text='use /start to add comics')
 
 
 async def my_comics(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -149,6 +156,7 @@ async def search_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE, no:
 
 
 def which_site(website: str):
+    print("which_site : ", website)
     match website:
         case "manhwax":
             return manhwax
@@ -205,7 +213,6 @@ async def new_comic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cls = which_site(website_name)  # class object
 
     LIMIT_SIZE_OF_ITEMS_QUERY = cls.limit_new
-    print("LIMIT_SIZE_OF_ITEMS_QUERY : ", LIMIT_SIZE_OF_ITEMS_QUERY)
 
     offset = int(update.inline_query.offset or 0)
     data_batch = await fetch_new(offset=offset, cls=cls, limit=LIMIT_SIZE_OF_ITEMS_QUERY)
