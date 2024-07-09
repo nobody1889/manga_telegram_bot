@@ -58,7 +58,7 @@ async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
         keys.append([
             InlineKeyboardButton(
                 text="download all",
-                callback_data=f"download-{the_comic['name']}-all_chapters-:{len(the_comic['new_chapters'])}"
+                callback_data=f"download-{the_comic['name']}-all_chapters-0:{len(the_comic['new_chapters'])}"
             )
         ])
 
