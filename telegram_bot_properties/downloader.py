@@ -5,7 +5,7 @@ import zipfile
 from telegram import Update
 from telegram.ext import ContextTypes, CallbackContext
 from stuff import show_comics
-from inline_part import which_site
+from .inline_part import which_site
 from clients.web_sites.web_clients import request
 
 
@@ -58,7 +58,7 @@ async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, string:
         data = extract_data(data=data)
         files_list = get_file(
             user=str(update.effective_user.id),
-            name=data["comic_name'"],
+            name=data["comic_name"],
             chapters=data["chapters"],
             # where=data['chapters_type']
         )

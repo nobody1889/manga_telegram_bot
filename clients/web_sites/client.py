@@ -3,7 +3,7 @@ from clients.commons import Js_worker, Requests
 import asyncio
 from bs4 import BeautifulSoup
 
-from clients.web_sites.web_clients import manhwax, chapmanganato, comixextra
+from clients.web_sites.web_clients import Manhwax, Chapmanganato, Comixextra
 
 
 class Client:
