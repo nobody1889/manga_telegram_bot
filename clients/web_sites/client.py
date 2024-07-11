@@ -41,15 +41,17 @@ class Client:
         if last_one:
             all_chapters_len = len(self.data[url]["all_chapters"])
             num = (all_chapters_len - self.data[url]["all_chapters"].index(self.data[url]["last_chapter"]))
-            self.data[url]["last_chapter"] = self.data[url]["all_chapters"][0]
+
             if (all_chapters_len - num) > 0:
                 self.data[url]["new_chapters"] = self.data[url]["all_chapters"][:num]
-                print(self.data[url]["all_chapters"][:num])
                 self._new_chapters_dict[self.data[url]["name"]] = self.data[url]["all_chapters"][:num]
+
             else:
                 self.data[url]["new_chapters"] = []
         else:
             self.data[url]["new_chapters"] = []
+
+        self.data[url]["last_chapter"] = self.data[url]["all_chapters"][0]
 
     async def main_pages_update(self):
         self.__comics_res = await Requests().aget(self.urls)
