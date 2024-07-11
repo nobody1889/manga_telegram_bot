@@ -3,14 +3,15 @@ import httpx
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
-def load_page(url):
-    options = Options()
-    driver = webdriver.Chrome()
-    driver.implicitly_wait(time_to_wait=10)
-    driver.get(url)
-    content = driver.page_source
-    driver.close()
-    return content
+
+# def load_page(url):
+#     options = Options()
+#     driver = webdriver.Chrome()
+#     driver.implicitly_wait(time_to_wait=10)
+#     driver.get(url)
+#     content = driver.page_source
+#     driver.close()
+#     return content
 
 
 async def request(url: str, bfs: bool = True) -> BeautifulSoup | bytes:
@@ -25,9 +26,41 @@ async def request(url: str, bfs: bool = True) -> BeautifulSoup | bytes:
         return res.content
 
 
-class manhwax:
+class BaseWebClass:
+    @staticmethod
+    def get_chapter_number(url: str) -> float:
+        raise NotImplementedError("Not implemented")
+
+    @staticmethod
+    def comic_main_page(soup: BeautifulSoup, data: dict) -> dict:
+        raise NotImplementedError("Not implemented")
+
+    @staticmethod
+    async def new_comics(page: int = 0, comics=None) -> dict:
+        raise NotImplementedError("Not implemented")
+
+    async def search(self, text: str, page: int = 0) -> dict:
+        raise NotImplementedError("Not implemented")
+
+    @staticmethod
+    async def get_comic_images(url: str) -> list[str]:
+        raise NotImplementedError("Not implemented")
+
+
+class Manhwax(BaseWebClass):
     limit_search: int = 10
     limit_new: int = 20
+
+    @staticmethod
+    def get_chapter_number(url: str) -> float:
+        text = url.split("/")[-2]
+        chapter = text[text.find("chapter-") + len("chapter-"):text.find("-english")]
+        try:
+            number = float(chapter)
+        except ValueError:
+            new = chapter.replace("-", ".")
+            number = float(new)
+        return number
 
     @staticmethod
     def comic_main_page(soup: BeautifulSoup, data: dict) -> dict:
@@ -86,9 +119,20 @@ class manhwax:
         pass
 
 
-class chapmanganato:
+class Chapmanganato(BaseWebClass):
     limit_search: int = 20
     limit_new: int = 24
+
+    @staticmethod
+    def get_chapter_number(url: str) -> float:
+        text = url.split("/")[-2]
+        chapter = text[text.find("chapter-") + len("chapter-"):]
+        try:
+            number = float(chapter)
+        except ValueError:
+            new = chapter.replace("-", ".")
+            number = float(new)
+        return number
 
     @staticmethod
     def comic_main_page(soup: BeautifulSoup, data: dict) -> dict:
@@ -148,9 +192,20 @@ class chapmanganato:
         pass
 
 
-class comixextra:
+class Comixextra(BaseWebClass):
     limit_search: int = 25
     limit_new: int = 30
+
+    @staticmethod
+    def get_chapter_number(url: str) -> float:
+        text = url.split("/")[-2]
+        chapter = text[text.find("-") + len("-"):]
+        try:
+            number = float(chapter)
+        except ValueError:
+            new = chapter.replace("-", ".")
+            number = float(new)
+        return number
 
     @staticmethod
     def comic_main_page(soup: BeautifulSoup, data: dict) -> dict:
