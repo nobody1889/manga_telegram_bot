@@ -16,7 +16,7 @@ from selenium.webdriver.chrome.options import Options
 
 async def request(url: str, bfs: bool = True) -> BeautifulSoup | bytes:
     client = httpx.AsyncClient()
-    res = await client.get(url, timeout=10)
+    res = await client.get(url, timeout=30)
 
     res.raise_for_status()
 
@@ -221,7 +221,7 @@ class Comixextra(BaseWebClass):
         data["name"] = ' '.join(new_name)
         data["rate"] = None
         all_tags = soup.find("div", class_="movie-meta-info").find('dl').find_all('a')
-        data['status'] = all_tags[0]
+        data['status'] = None
         data["genres"] = [tag.text for tag in all_tags[1:]]
         data["cover_url"] = soup.find("img", {'alt': data['name']})['src']
 
@@ -264,4 +264,9 @@ class Comixextra(BaseWebClass):
 
     @staticmethod
     async def get_comic_images(url: str) -> list[str]:
-        pass
+        if url.split('/')[-1] is not 'full':
+            url += 'full'
+        soup = await request(url)
+        body = soup.find("div", class_="chapter-container").find_all('img')
+        images = [part["src"] for part in body]
+        return images
