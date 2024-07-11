@@ -3,7 +3,7 @@ import io
 import zipfile
 
 from telegram import Update
-from telegram.ext import ContextTypes, CallbackContext
+from telegram.ext import ContextTypes
 from stuff import show_comics
 from .inline_part import which_site
 from clients.web_sites.web_clients import request
@@ -20,22 +20,23 @@ def extract_data(data: list) -> dict:
 def get_file(user: str, name: str, chapters: list[int], where: str = "all_chapters") -> list:
     dict_file: dict = show_comics(name=user)
     my_list = []
+
     for dict_name in dict_file:
-        if dict_name["name"] == name:
+        if dict_file[dict_name]["name"] == name:
             if len(chapters) == 2:  # we have range
-                for chapter in dict_file[where][chapters[0]:chapters[1]]:
+                for chapter in dict_file[dict_name][where][chapters[0]:chapters[1]]:
                     my_list.append(chapter)
 
             else:  # just one chapter is there
-                my_list.append(dict_file[where][chapters[-1]])
+                my_list.append(dict_file[dict_name][where][chapters[-1]])
 
             return my_list
-        else:
-            return []
+    return []
 
 
 async def image_extractor(cls, chapters: list[str]):  # extract all images
-    return cls.get_comic_images(url=chapters)
+    images = await cls.get_comic_images(url=chapters)
+    return images
 
 
 async def create_cbz_file_from_urls(image_urls) -> io.BytesIO:
@@ -50,7 +51,8 @@ async def create_cbz_file_from_urls(image_urls) -> io.BytesIO:
 
 
 async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, string: str):
-    data = string.split('-')[1:]
+    data = string.split('~')[1:]
+
     if len(data) == 2:
         pass
 
@@ -67,14 +69,15 @@ async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, string:
             task = [image_extractor(which_site(file.split('/')[2].split('.')[0]), chapters=file) for file in files_list]
             responses: tuple[list[str]] = await asyncio.gather(*task)
 
-            cbz_buffer = create_cbz_file_from_urls(responses)
+            cbz_buffer = await create_cbz_file_from_urls(*responses)
+
             await context.bot.send_document(
                 chat_id=update.effective_user.id,
                 document=cbz_buffer,
                 filename='comics.cbz')
 
         else:
-            context.bot.send_message(
+            await context.bot.send_message(
                 chat_id=update.effective_user.id,
                 text="No comic found for this name"
             )
