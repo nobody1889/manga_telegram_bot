@@ -5,7 +5,7 @@ from telegram import Update, InlineQueryResultArticle, InputTextMessageContent, 
 from telegram.ext import ContextTypes
 
 from stuff import show_comics, read_new_from_file, valid_sites
-from clients.web_sites.web_clients import manhwax, chapmanganato, comixextra
+from clients.web_sites.web_clients import Manhwax, Chapmanganato, Comixextra
 
 inline_query_buttons = [
     'my_comics',
@@ -14,6 +14,18 @@ inline_query_buttons = [
 sites = [site.split('/')[-2].split('.')[0] for site in valid_sites]
 
 LIMIT_SIZE_OF_ITEMS_QUERY: int = 0
+
+
+def which_site(website: str):
+    match website:
+        case "manhwax":
+            return Manhwax
+        case "chapmanganato":
+            return Chapmanganato
+        case "comixextra":
+            return Comixextra
+        case _:
+            raise ValueError(f"the key is not valid: {website}")
 
 
 async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -25,7 +37,7 @@ async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_photo(
             photo=comic["cover_url"],
             caption=f"""
-            name: {comic["name"]}\n\nrate: {comic["rate"]}\n\nstatus: {comic["status"]}\n\n tags: {comic["genres"]}
+            name: {comic["name"]}\n\nrate: {comic["rate"]}\n\nstatus: {comic["status"]}\n\ntags: {comic["genres"]}
             """,
             reply_markup=InlineKeyboardMarkup(
                 [
@@ -45,13 +57,14 @@ async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
         keys = []
 
         for num, chapter in enumerate(new_chapters):
-            text = f'{len(new_chapters) - num}'
-
+            # text = f'{len(new_chapters) - num}'
+            cls = which_site(the_comic["type"])
+            chap_num = cls.get_chapter_number(chapter)
             keys.append(
                 [
-                    InlineKeyboardButton(text=f"read {text}", url=chapter),
+                    InlineKeyboardButton(text=f"read {chap_num}", url=chapter),
                     InlineKeyboardButton(
-                        text=f"download {text}", callback_data=f"download-{the_comic['name']}-new_chapters-{num}"
+                        text=f"download {chap_num}", callback_data=f"download-{the_comic['name']}-new_chapters-{num}"
                     )
 
                 ])
@@ -155,17 +168,6 @@ async def search_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE, no:
     # context.user_data["action"] = None
 
 
-def which_site(website: str):
-    print("which_site : ", website)
-    match website:
-        case "manhwax":
-            return manhwax
-        case "chapmanganato":
-            return chapmanganato
-        case "comixextra":
-            return comixextra
-
-
 async def fetch_search(cls, name: str, limit: int = LIMIT_SIZE_OF_ITEMS_QUERY,
                        offset: int = 0) -> dict:  # cls is the class actually
     searched_data: dict = await cls.search(text=name, page=(offset // limit))
@@ -181,6 +183,7 @@ async def search_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global LIMIT_SIZE_OF_ITEMS_QUERY
 
     website_name = context.user_data.get("action")
+
     cls = which_site(website_name)()  # class object
     name = update.inline_query.query
 
