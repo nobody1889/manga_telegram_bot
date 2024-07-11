@@ -1,7 +1,7 @@
 from uuid import uuid4
 
 from telegram import Update, InlineQueryResultArticle, InputTextMessageContent, InlineKeyboardMarkup, \
-    InlineKeyboardButton
+    InlineKeyboardButton, error
 from telegram.ext import ContextTypes
 
 from stuff import show_comics, read_new_from_file, valid_sites
@@ -44,7 +44,7 @@ async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
                     [InlineKeyboardButton("first chapter", url=comic["all_chapters"][-1]),
                      InlineKeyboardButton("last chapter", url=comic["all_chapters"][0])],
                     [InlineKeyboardButton(
-                        "go to download", callback_data=f"download-{comic['name']}-all_chapters"
+                        "go to download", callback_data=f"download~{comic['name']}~all_chapters"
                     )]
                 ]
             )
@@ -64,14 +64,14 @@ async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [
                     InlineKeyboardButton(text=f"read {chap_num}", url=chapter),
                     InlineKeyboardButton(
-                        text=f"download {chap_num}", callback_data=f"download-{the_comic['name']}-new_chapters-{num}"
+                        text=f"download {chap_num}", callback_data=f"download~{the_comic['name']}~new_chapters~{num}"
                     )
 
                 ])
         keys.append([
             InlineKeyboardButton(
                 text="download all",
-                callback_data=f"download-{the_comic['name']}-all_chapters-0:{len(the_comic['new_chapters'])}"
+                callback_data=f"download~{the_comic['name']}~all_chapters~0:{len(the_comic['new_chapters'])}"
             )
         ])
 
@@ -121,11 +121,21 @@ async def my_comics_inline_query(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def my_comics(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await my_comics_inline_query(update, context, 'my_comics')
+    try:
+        await my_comics_inline_query(update, context, 'my_comics')
+    except error.BadRequest:
+        await context.bot.send_message(text='please use /check and try again')
 
 
 async def remove_my_comics(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await my_comics_inline_query(update, context, 'remove_comics')
+    try:
+        await my_comics_inline_query(update, context, 'remove_comics')
+    except error.BadRequest:
+        await context.bot.send_message(
+            text="""
+            we are really sorry but you need use /check or inline check first 
+            """
+        )
 
 
 async def my_new_chapters(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -233,5 +243,5 @@ async def new_comic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     next_offset = str(offset + LIMIT_SIZE_OF_ITEMS_QUERY) if len(data_batch) == LIMIT_SIZE_OF_ITEMS_QUERY else ''
-    # context.user_data["action"] = "search"
+    
     await update.inline_query.answer(results, cache_time=0, next_offset=next_offset, read_timeout=10)
