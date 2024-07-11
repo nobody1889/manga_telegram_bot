@@ -12,11 +12,13 @@ from telegram_bot_properties.inline_part import my_comics, inline_query_buttons,
 from telegram_bot_properties.downloader import *
 from telegram_bot_properties.updates import add_new_comics
 
+from admin import send_files_to_admin
+
 import re
 
-Token = 'Token'
-local_keyboard = ['search', 'my comics', 'check for new chapters', "kill"]
-ADMIN_USER_ID = "admin_id"
+Token = '6968670681:AAEY1wqMF9zGCvsMMty3PXrPGO2wPuAe-ts'
+local_keyboard = ['search', 'my comics', 'check for new chapters', "kill", "save"]
+ADMIN_USER_ID = 5519596138
 download_pattern = re.compile("^download~")
 
 
@@ -111,7 +113,12 @@ async def handle_url(update: Update, context: CallbackContext) -> None:
                     application.stop_running()
                 else:
                     await update.message.reply_text("nop i can't understand 😞")
-
+            case 'save':
+                if update.effective_user.id == ADMIN_USER_ID:
+                    await update.message.reply_text("all files will send to you now")
+                    await send_files_to_admin(update, context)
+                else:
+                    await update.message.reply_text("nop i can't understand 😞")
     elif action in ['remove_comics', 'receive_url', 'set_time']:
         match action:
             case 'remove_comics':
