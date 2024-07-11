@@ -93,8 +93,27 @@ async def button(update: Update, context: CallbackContext) -> None:
 async def handle_url(update: Update, context: CallbackContext) -> None:
     text = update.message.text
     action = context.user_data.get("action")
+    if text.lower() in local_keyboard:
+        context.user_data["action"] = None  # if user regret to send new comic this one make the last action nothing
 
-    if action in ['remove_comics', 'receive_url', 'set_time']:
+        match text.lower():
+            case 'search':
+                await search_buttons(update, context)
+
+            case 'my comics':
+                await show_main_menu(update, context)
+
+            case 'check for new chapters':
+                await check_comics_command(update, context)
+
+            case 'kill':
+                if update.effective_user.id == ADMIN_USER_ID:
+                    await update.message.reply_text('you killed the bot 💀')
+                    application.stop_running()
+                else:
+                    await update.message.reply_text("nop i can't understand 😞")
+
+    elif action in ['remove_comics', 'receive_url', 'set_time']:
         match action:
             case 'remove_comics':
                 valued, invalid = remove_url(text, user=str(update.message.from_user.id))
@@ -115,26 +134,6 @@ async def handle_url(update: Update, context: CallbackContext) -> None:
             case 'set_time':
                 if await scheduler.set_timer(text, update, context):
                     context.user_data["action"] = None
-
-    elif text.lower() in local_keyboard:
-        context.user_data["action"] = None  # if user regret to send new comic this one make the last action nothing
-
-        match text.lower():
-            case 'search':
-                await search_buttons(update, context)
-
-            case 'my comics':
-                await show_main_menu(update, context)
-
-            case 'check for new chapters':
-                await check_comics_command(update, context)
-
-            case 'kill':
-                if update.effective_user.id == ADMIN_USER_ID:
-                    await update.message.reply_text('you killed the bot 💀')
-                    application.stop_running()
-                else:
-                    await update.message.reply_text("nop i can't understand 😞")
 
     elif action in inline_query_buttons:
         await generator(link=text, update=update, context=context)
