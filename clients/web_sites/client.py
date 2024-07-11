@@ -30,11 +30,11 @@ class Client:
 
         match url_type:
             case 'manhwax':
-                self.data[url] = manhwax.comic_main_page(soup, data=self.data[url])
+                self.data[url] = Manhwax.comic_main_page(soup, data=self.data[url])
             case 'chapmanganato':
-                self.data[url] = chapmanganato.comic_main_page(soup, data=self.data[url])
+                self.data[url] = Chapmanganato.comic_main_page(soup, data=self.data[url])
             case 'comixextra':
-                self.data[url] = comixextra.comic_main_page(soup, data=self.data[url])
+                self.data[url] = Comixextra.comic_main_page(soup, data=self.data[url])
 
         last_one = self.data[url]["last_chapter"]
 
