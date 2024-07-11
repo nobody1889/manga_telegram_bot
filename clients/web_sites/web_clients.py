@@ -1,5 +1,16 @@
 from bs4 import BeautifulSoup
 import httpx
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
+def load_page(url):
+    options = Options()
+    driver = webdriver.Chrome()
+    driver.implicitly_wait(time_to_wait=10)
+    driver.get(url)
+    content = driver.page_source
+    driver.close()
+    return content
 
 
 async def request(url: str, bfs: bool = True) -> BeautifulSoup | bytes:
@@ -139,7 +150,7 @@ class chapmanganato:
 
 class comixextra:
     limit_search: int = 25
-    limit_new: int = 50
+    limit_new: int = 30
 
     @staticmethod
     def comic_main_page(soup: BeautifulSoup, data: dict) -> dict:
@@ -175,7 +186,10 @@ class comixextra:
             comic_url = comic.find('a')["href"]
             comics_info[comic_url] = {}
             comics_info[comic_url]["name"] = comic.find('a').text
-            comics_info[comic_url]["cover"] = None
+            try:
+                comics_info[comic_url]["cover"] = comic.find("img")["src"]
+            except TypeError:
+                comics_info[comic_url]["cover"] = None
 
         return comics_info
 
