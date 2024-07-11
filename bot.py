@@ -1,3 +1,5 @@
+import os.path
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, CallbackContext, CallbackQueryHandler, \
     MessageHandler, filters, InlineQueryHandler
@@ -15,7 +17,7 @@ import re
 Token = '6968670681:AAEY1wqMF9zGCvsMMty3PXrPGO2wPuAe-ts'
 local_keyboard = ['search', 'my comics', 'check for new chapters', "kill"]
 ADMIN_USER_ID = 5519596138
-download_pattern = re.compile("^download-")
+download_pattern = re.compile("^download~")
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -86,9 +88,6 @@ async def button(update: Update, context: CallbackContext) -> None:
     elif re.match(pattern=download_pattern, string=action):
         await downloader(update=update, context=context, string=action)
 
-    # else:
-    #     await download_buttons(action=action, update=update, context=context)
-
 
 async def handle_url(update: Update, context: CallbackContext) -> None:
     text = update.message.text
@@ -128,8 +127,14 @@ async def handle_url(update: Update, context: CallbackContext) -> None:
                 context.user_data["action"] = None
 
             case 'receive_url':
-                await add_new_comics(update=update, context=context, text=text)
-                context.user_data["action"] = None
+                try:
+                    await add_new_comics(update=update, context=context, text=text)
+                    context.user_data["action"] = None
+                except AttributeError:
+                    await context.bot.send_message(
+                        chat_id=update.effective_user.id,
+                        text="you have to send me the home page of comic!!!\ntry agin or use search"
+                    )
 
             case 'set_time':
                 if await scheduler.set_timer(text, update, context):
@@ -147,6 +152,10 @@ async def handle_url(update: Update, context: CallbackContext) -> None:
 
 
 if __name__ == '__main__':
+    if not os.path.isdir('js_holder'):
+        print("creating js file")
+        os.mkdir('js_holder')
+
     application = ApplicationBuilder().token(Token).build()
     scheduler = Scheduler()
 
