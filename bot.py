@@ -14,9 +14,9 @@ from telegram_bot_properties.updates import add_new_comics
 
 import re
 
-Token = '6968670681:AAEY1wqMF9zGCvsMMty3PXrPGO2wPuAe-ts'
+Token = 'Token'
 local_keyboard = ['search', 'my comics', 'check for new chapters', "kill"]
-ADMIN_USER_ID = 5519596138
+ADMIN_USER_ID = "admin_id"
 download_pattern = re.compile("^download~")
 
 
