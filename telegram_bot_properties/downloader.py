@@ -53,10 +53,7 @@ async def create_cbz_file_from_urls(image_urls) -> io.BytesIO:
 async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, string: str):
     data = string.split('~')[1:]
 
-    if len(data) == 2:
-        pass
-
-    else:  # len(data) == 3
+    if len(data) == 3:
         data = extract_data(data=data)
         files_list = get_file(
             user=str(update.effective_user.id),
@@ -81,3 +78,5 @@ async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, string:
                 chat_id=update.effective_user.id,
                 text="No comic found for this name"
             )
+    else:
+        raise ValueError("something pass here wrong")
