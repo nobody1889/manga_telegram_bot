@@ -90,6 +90,35 @@ async def button(update: Update, context: CallbackContext) -> None:
     elif re.match(pattern=download_pattern, string=action):
         await downloader(update=update, context=context, string=action)
 
+    elif context.user_data.get("on_work_data"):
+        if action != 'back' and action != "range_download":
+            context.user_data["on_work_data"]["range"].append(float(action))
+        d_range: list = context.user_data["on_work_data"]["range"]
+
+        if action == 'back' and len(d_range) > 0:
+            context.user_data["on_work_data"]["range"].pop()
+
+        elif len(d_range) == 2:
+            if d_range[0] > d_range[1]:
+                d_range[0], d_range[1] = d_range[1], d_range[0]
+                context.user_data["on_work_data"]["range"] = d_range
+
+            name = context.user_data["on_work_data"]["name"]
+            name_range = ':'.join(str(r) for r in d_range)
+            my_download_pattern = f'download~{name}~all_chapters~{name_range}'
+            context.user_data["on_work_data"] = None
+
+            await query.delete_message()
+            await context.bot.send_message(
+                chat_id=update.effective_user.id,
+                text=f"download started . . .[{','.join(str(r) for r in d_range)}]"
+            )
+            await downloader(update=update, context=context, string=my_download_pattern)
+
+        else:
+            await query.edit_message_caption(f"choose the rage of download...[{','.join(str(r) for r in d_range)}]")
+            await query.edit_message_reply_markup(context.user_data["on_work_data"]["buttons"])
+
 
 async def handle_url(update: Update, context: CallbackContext) -> None:
     text = update.message.text
