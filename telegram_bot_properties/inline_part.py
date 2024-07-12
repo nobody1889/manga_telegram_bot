@@ -28,11 +28,29 @@ def which_site(website: str):
             raise ValueError(f"the key is not valid: {website}")
 
 
+def button_maker_via_range(the_comic) -> InlineKeyboardMarkup:
+    cls = which_site(the_comic["type"])
+    in_buttons = []
+    out_buttons = []
+
+    for num in range(0, len(the_comic["all_chapters"]), 7):
+        for comic in the_comic["all_chapters"][num:num + 7]:
+            res = cls.get_chapter_number(comic)
+            in_buttons.append(InlineKeyboardButton(text=str(res), callback_data=res))
+        out_buttons.append(in_buttons)
+    out_buttons.append([InlineKeyboardButton(text="back", callback_data="back")])
+    return InlineKeyboardMarkup(out_buttons)
+
+
 async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
     action = context.user_data.get("action")
     if action == 'my_comics':
         comics = show_comics(name=str(update.effective_user.id))
         comic = comics[link]
+
+        context.user_data["on_work_data"] = comic
+        context.user_data["on_work_data"].update({"buttons": button_maker_via_range(comic)})
+        context.user_data["on_work_data"].update({"range": []})
 
         await update.message.reply_photo(
             photo=comic["cover_url"],
@@ -44,7 +62,9 @@ async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
                     [InlineKeyboardButton("first chapter", url=comic["all_chapters"][-1]),
                      InlineKeyboardButton("last chapter", url=comic["all_chapters"][0])],
                     [InlineKeyboardButton(
-                        "go to download", callback_data=f"download~{comic['name']}~all_chapters"
+                        # "go to download", callback_data=f"download~{comic['name']}~all_chapters"
+                        text="range_download",
+                        callback_data="range_download"
                     )]
                 ]
             )
@@ -124,7 +144,10 @@ async def my_comics(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         await my_comics_inline_query(update, context, 'my_comics')
     except error.BadRequest:
-        await context.bot.send_message(text='please use /check and try again')
+        await context.bot.send_message(
+            chat_id=update.effective_user.id,
+            text='please use /check and try again'
+        )
 
 
 async def remove_my_comics(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -243,5 +266,5 @@ async def new_comic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     next_offset = str(offset + LIMIT_SIZE_OF_ITEMS_QUERY) if len(data_batch) == LIMIT_SIZE_OF_ITEMS_QUERY else ''
-    
+
     await update.inline_query.answer(results, cache_time=0, next_offset=next_offset, read_timeout=10)
