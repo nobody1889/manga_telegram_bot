@@ -1,17 +1,6 @@
+import json
 from bs4 import BeautifulSoup
 import httpx
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-
-
-# def load_page(url):
-#     options = Options()
-#     driver = webdriver.Chrome()
-#     driver.implicitly_wait(time_to_wait=10)
-#     driver.get(url)
-#     content = driver.page_source
-#     driver.close()
-#     return content
 
 
 async def request(url: str, bfs: bool = True) -> BeautifulSoup | bytes:
@@ -116,7 +105,14 @@ class Manhwax(BaseWebClass):
 
     @staticmethod
     async def get_comic_images(url: str) -> list[str]:
-        pass
+        soup = await request(url)
+
+        content = soup.find_all('script')[14].text
+        links = content[content.find('(') + 1: content.find(')')]
+
+        js = json.loads(links)
+        images = js['sources'][0]['images']
+        return images
 
 
 class Chapmanganato(BaseWebClass):
