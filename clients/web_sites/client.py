@@ -40,7 +40,7 @@ class Client:
 
         if last_one:
             all_chapters_len = len(self.data[url]["all_chapters"])
-            num = (all_chapters_len - self.data[url]["all_chapters"].index(self.data[url]["last_chapter"]))
+            num = self.data[url]["all_chapters"].index(last_one)
 
             if (all_chapters_len - num) > 0:
                 self.data[url]["new_chapters"] = self.data[url]["all_chapters"][:num]
