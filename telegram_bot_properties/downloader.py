@@ -1,8 +1,8 @@
 import asyncio
 import io
 import zipfile
-
-from telegram import Update
+# import multiprocessing
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, error
 from telegram.ext import ContextTypes
 from stuff import show_comics
 from .inline_part import which_site
@@ -34,7 +34,7 @@ def get_file(user: str, name: str, chapters: list[int], where: str = "all_chapte
     return []
 
 
-async def image_extractor(cls, chapters: list[str]):  # extract all images
+async def image_extractor(cls, chapters: list[str]) -> list:  # extract all images
     images = await cls.get_comic_images(url=chapters)
     return images
 
@@ -66,12 +66,21 @@ async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, string:
             task = [image_extractor(which_site(file.split('/')[2].split('.')[0]), chapters=file) for file in files_list]
             responses: tuple[list[str]] = await asyncio.gather(*task)
 
-            cbz_buffer = await create_cbz_file_from_urls(*responses)
-
-            await context.bot.send_document(
-                chat_id=update.effective_user.id,
-                document=cbz_buffer,
-                filename='comics.cbz')
+            cbz_buffer = await create_cbz_file_from_urls(responses[-1])
+            try:
+                await context.bot.send_document(
+                    chat_id=update.effective_user.id,
+                    document=cbz_buffer,
+                    filename='comics.cbz',
+                    read_timeout=30,
+                    write_timeout=30,
+                    connect_timeout=30
+                )
+            except error.TimedOut:
+                await context.bot.send_message(
+                    chat_id=update.effective_user.id,
+                    text="if you didn't receive the file please try again"
+                )
 
         else:
             await context.bot.send_message(
@@ -80,3 +89,33 @@ async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, string:
             )
     else:
         raise ValueError("something pass here wrong")
+
+
+async def get_work_data(update: Update, context: ContextTypes.DEFAULT_TYPE, action, query):
+    if action != 'back' and action != "range_download":
+        context.user_data["on_work_data"]["range"].append(int(action))
+    d_range: list = context.user_data["on_work_data"]["range"]
+
+    if action == 'back' and len(d_range) > 0:
+        context.user_data["on_work_data"]["range"].pop()
+
+    if len(d_range) == 2:
+        if d_range[0] > d_range[1]:
+            d_range[0], d_range[1] = d_range[1], d_range[0]
+            context.user_data["on_work_data"]["range"] = d_range
+
+        name = context.user_data["on_work_data"]["name"]
+        name_range = ':'.join(str(r) for r in d_range)
+        my_download_pattern = f'download~{name}~all_chapters~{name_range}'
+        context.user_data["on_work_data"] = None
+
+        await query.delete_message()
+        await context.bot.send_message(
+            chat_id=update.effective_user.id,
+            text=f"download started . . .[{','.join(str(r) for r in d_range)}]"
+        )
+        await downloader(update=update, context=context, string=my_download_pattern)
+
+    else:
+        await query.edit_message_caption(f"choose the rage of download...[{','.join(str(r) for r in d_range)}]")
+        await query.edit_message_reply_markup(context.user_data["on_work_data"]["buttons"])
