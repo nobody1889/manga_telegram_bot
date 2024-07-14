@@ -185,7 +185,12 @@ class Chapmanganato(BaseWebClass):
 
     @staticmethod
     async def get_comic_images(url: str) -> list[str]:
-        pass
+        soup = await request(url)
+        images = soup.find("div", class_="container-chapter-reader").find_all('img')
+        raw_images = []
+        for image in images:
+            raw_images.append(image['src'])
+        return raw_images
 
 
 class Comixextra(BaseWebClass):
@@ -260,7 +265,7 @@ class Comixextra(BaseWebClass):
 
     @staticmethod
     async def get_comic_images(url: str) -> list[str]:
-        if url.split('/')[-1] is not 'full':
+        if url.split('/')[-1] != 'full':
             url += 'full'
         soup = await request(url)
         body = soup.find("div", class_="chapter-container").find_all('img')
