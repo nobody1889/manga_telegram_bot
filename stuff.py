@@ -39,8 +39,9 @@ async def add_url(urls: str, user: str):
 
 def remove_url(urls: str, user):
     person = Js_worker(user)
-    if urls.lower() == 'all':
+    if urls.lower() == 'remove all':
         person.delete()
+        return 'all', None
     elif person.read():
         data: dict | None = person.read()
 
