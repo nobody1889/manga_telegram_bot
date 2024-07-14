@@ -34,9 +34,13 @@ def button_maker_via_range(the_comic) -> InlineKeyboardMarkup:
     out_buttons = []
 
     for num in range(0, len(the_comic["all_chapters"]), 7):
-        for comic in the_comic["all_chapters"][num:num + 7]:
+        for inner_num, comic in enumerate(the_comic["all_chapters"][num:num + 7]):
             res = cls.get_chapter_number(comic)
-            in_buttons.append(InlineKeyboardButton(text=str(res), callback_data=res))
+            in_buttons.append(InlineKeyboardButton(
+                text=str(res),
+                callback_data=(len(the_comic["all_chapters"]) - (inner_num + num)))
+            )
+
         out_buttons.append(in_buttons)
     out_buttons.append([InlineKeyboardButton(text="back", callback_data="back")])
     return InlineKeyboardMarkup(out_buttons)
@@ -122,6 +126,18 @@ async def my_comics_inline_query(update: Update, context: ContextTypes.DEFAULT_T
         all_comics: dict = show_comics(name=str(name))
 
         results = []
+
+        if action == 'remove_comics':
+            results.append(
+                InlineQueryResultArticle(
+                    id=str(uuid4()),
+                    title="remove all",
+                    input_message_content=InputTextMessageContent(
+                        message_text="remove all",
+                        disable_web_page_preview=True
+                    ),
+                    thumbnail_url=None
+                ))
 
         for comic_name in all_comics:
             results.append(
