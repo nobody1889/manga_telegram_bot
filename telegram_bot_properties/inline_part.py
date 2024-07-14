@@ -30,18 +30,20 @@ def which_site(website: str):
 
 def button_maker_via_range(the_comic) -> InlineKeyboardMarkup:
     cls = which_site(the_comic["type"])
-    in_buttons = []
     out_buttons = []
 
     for num in range(0, len(the_comic["all_chapters"]), 7):
+        in_buttons = []  # Initialize in_buttons inside the outer loop
         for inner_num, comic in enumerate(the_comic["all_chapters"][num:num + 7]):
             res = cls.get_chapter_number(comic)
-            in_buttons.append(InlineKeyboardButton(
-                text=str(res),
-                callback_data=(len(the_comic["all_chapters"]) - (inner_num + num)))
+            in_buttons.append(
+                InlineKeyboardButton(
+                    text=str(res),
+                    callback_data=str(len(the_comic["all_chapters"]) - (inner_num + num))
+                )
             )
-
         out_buttons.append(in_buttons)
+
     out_buttons.append([InlineKeyboardButton(text="back", callback_data="back")])
     return InlineKeyboardMarkup(out_buttons)
 
