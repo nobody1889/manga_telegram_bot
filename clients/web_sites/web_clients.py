@@ -3,9 +3,9 @@ from bs4 import BeautifulSoup
 import httpx
 
 
-async def request(url: str, bfs: bool = True) -> BeautifulSoup | bytes:
+async def request(url: str, header: dict = None, bfs: bool = True) -> BeautifulSoup | bytes:
     client = httpx.AsyncClient()
-    res = await client.get(url, timeout=30)
+    res = await client.get(url, headers=header, timeout=30)
 
     res.raise_for_status()
 
