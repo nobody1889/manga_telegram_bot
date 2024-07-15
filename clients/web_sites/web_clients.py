@@ -39,6 +39,7 @@ class BaseWebClass:
 class Manhwax(BaseWebClass):
     limit_search: int = 10
     limit_new: int = 20
+    get_headers: dict = {}
 
     @staticmethod
     def get_chapter_number(url: str) -> float:
@@ -118,6 +119,7 @@ class Manhwax(BaseWebClass):
 class Chapmanganato(BaseWebClass):
     limit_search: int = 20
     limit_new: int = 24
+    get_headers: dict = {}
 
     @staticmethod
     def get_chapter_number(url: str) -> float:
@@ -196,6 +198,9 @@ class Chapmanganato(BaseWebClass):
 class Comixextra(BaseWebClass):
     limit_search: int = 25
     limit_new: int = 30
+    get_headers: dict = {
+        "Referer": "https://chapmanganato.to/",
+    }
 
     @staticmethod
     def get_chapter_number(url: str) -> float:
