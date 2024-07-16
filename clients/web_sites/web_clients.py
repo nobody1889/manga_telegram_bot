@@ -1,4 +1,6 @@
 import json
+import re
+
 from bs4 import BeautifulSoup
 import httpx
 
@@ -106,12 +108,18 @@ class Manhwax(BaseWebClass):
 
     @staticmethod
     async def get_comic_images(url: str) -> list[str]:
+        def extract_ts_reader_content(script_tags):
+            pattern = re.compile(r'<script>.*?ts_reader\.run\((\{.*?\})\);.*?<\/script>', re.DOTALL)
+            matches = pattern.findall(script_tags)
+            return matches
+
         soup = await request(url)
 
-        content = soup.find_all('script')[14].text
-        links = content[content.find('(') + 1: content.find(')')]
+        content = soup.find_all('script')
+        links = [extract_ts_reader_content(str(one)) for one in content]
+        v_link = [v for v in links if v][-1][-1]
 
-        js = json.loads(links)
+        js = json.loads(v_link)
         images = js['sources'][0]['images']
         return images
 
