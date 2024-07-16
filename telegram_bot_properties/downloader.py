@@ -1,7 +1,6 @@
 import asyncio
 import io
 import zipfile
-# import multiprocessing
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, error
 from telegram.ext import ContextTypes
 from stuff import show_comics
@@ -21,15 +20,21 @@ def get_file(user: str, name: str, chapters: list[int], where: str = "all_chapte
     dict_file: dict = show_comics(name=user)
     my_list = []
 
+    if len(chapters) == 2 and chapters[0] == chapters[-1]:
+        del chapters[1]
+
     for dict_name in dict_file:
         if dict_file[dict_name]["name"] == name:
             if len(chapters) == 2:  # we have range
-                for chapter in dict_file[dict_name][where][chapters[0]:chapters[1]]:
-                    my_list.append(chapter)
+                if chapters[0]-1 == 0:
+                    for chapter in dict_file[dict_name][where][-chapters[1]:]:
+                        my_list.append(chapter)
+                else:
+                    for chapter in dict_file[dict_name][where][-chapters[1]:-(chapters[0]-1)]:
+                        my_list.append(chapter)
 
             else:  # just one chapter is there
-                my_list.append(dict_file[dict_name][where][chapters[-1]])
-
+                my_list.append(dict_file[dict_name][where][-chapters[-1]])
             return my_list
     return []
 
@@ -39,11 +44,11 @@ async def image_extractor(cls, chapters: list[str]) -> list:  # extract all imag
     return images
 
 
-async def create_cbz_file_from_urls(image_urls) -> io.BytesIO:
+async def create_cbz_file_from_urls(image_urls: list, cls) -> io.BytesIO:
     cbz_buffer = io.BytesIO()  # the goal -> do not download anything
     with zipfile.ZipFile(cbz_buffer, "w", zipfile.ZIP_DEFLATED) as cbz_f:
         for num, url in enumerate(image_urls):
-            response_content: bytes = await request(url=url, bfs=False)
+            response_content: bytes = await request(url=url, header=cls.get_headers, bfs=False)
             image = io.BytesIO(response_content)
             cbz_f.writestr(f'image_{num + 1}.jpg', image.getvalue())
     cbz_buffer.seek(0)
@@ -55,23 +60,25 @@ async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, string:
 
     if len(data) == 3:
         data = extract_data(data=data)
+
         files_list = get_file(
             user=str(update.effective_user.id),
             name=data["comic_name"],
             chapters=data["chapters"],
-            # where=data['chapters_type']
+            where=data['chapters_type']
         )
 
+        # link = ','.join(str(d) for d in data['chapters'])
         if len(files_list) > 0:
-            task = [image_extractor(which_site(file.split('/')[2].split('.')[0]), chapters=file) for file in files_list]
-            responses: tuple[list[str]] = await asyncio.gather(*task)
-
-            cbz_buffer = await create_cbz_file_from_urls(responses[-1])
+            cls = which_site(files_list[0].split('/')[2].split('.')[0])
+            task = [image_extractor(cls, chapters=file) for file in files_list]
+            responses = await asyncio.gather(*task)
+            cbz_buffer = await create_cbz_file_from_urls(image_urls=responses[-1], cls=cls)
             try:
                 await context.bot.send_document(
                     chat_id=update.effective_user.id,
                     document=cbz_buffer,
-                    filename='comics.cbz',
+                    filename=f'{data["comic_name"]}.cbz',
                     read_timeout=30,
                     write_timeout=30,
                     connect_timeout=30
