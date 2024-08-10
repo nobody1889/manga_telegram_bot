@@ -26,11 +26,11 @@ def get_file(user: str, name: str, chapters: list[int], where: str = "all_chapte
     for dict_name in dict_file:
         if dict_file[dict_name]["name"] == name:
             if len(chapters) == 2:  # we have range
-                if chapters[0]-1 == 0:
+                if chapters[0] - 1 == 0:
                     for chapter in dict_file[dict_name][where][-chapters[1]:]:
                         my_list.append(chapter)
                 else:
-                    for chapter in dict_file[dict_name][where][-chapters[1]:-(chapters[0]-1)]:
+                    for chapter in dict_file[dict_name][where][-chapters[1]:-(chapters[0] - 1)]:
                         my_list.append(chapter)
 
             else:  # just one chapter is there
@@ -44,7 +44,7 @@ async def image_extractor(cls, chapters: list[str]) -> list:  # extract all imag
     return images
 
 
-async def create_cbz_file_from_urls(image_urls: list, cls) -> io.BytesIO:
+async def create_cbz_files_from_urls(image_urls: list, cls) -> io.BytesIO:
     cbz_buffer = io.BytesIO()  # the goal -> do not download anything
     with zipfile.ZipFile(cbz_buffer, "w", zipfile.ZIP_DEFLATED) as cbz_f:
         for num, url in enumerate(image_urls):
@@ -60,7 +60,7 @@ async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, string:
 
     if len(data) == 3:
         data = extract_data(data=data)
-
+        
         files_list = get_file(
             user=str(update.effective_user.id),
             name=data["comic_name"],
@@ -72,22 +72,24 @@ async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, string:
         if len(files_list) > 0:
             cls = which_site(files_list[0].split('/')[2].split('.')[0])
             task = [image_extractor(cls, chapters=file) for file in files_list]
-            responses = await asyncio.gather(*task)
-            cbz_buffer = await create_cbz_file_from_urls(image_urls=responses[-1], cls=cls)
-            try:
-                await context.bot.send_document(
-                    chat_id=update.effective_user.id,
-                    document=cbz_buffer,
-                    filename=f'{data["comic_name"]}.cbz',
-                    read_timeout=30,
-                    write_timeout=30,
-                    connect_timeout=30
-                )
-            except error.TimedOut:
-                await context.bot.send_message(
-                    chat_id=update.effective_user.id,
-                    text="if you didn't receive the file please try again"
-                )
+            responses: list[list] = list(await asyncio.gather(*task))
+            for number, one_response in enumerate(responses):
+                cbz_buffer = await create_cbz_files_from_urls(image_urls=one_response, cls=cls)
+                chapter_number = cls.get_chapter_number(files_list[number])
+                try:
+                    await context.bot.send_document(
+                        chat_id=update.effective_user.id,
+                        document=cbz_buffer,
+                        filename=f'{data["comic_name"]}/chapter:{chapter_number}.cbz',
+                        read_timeout=30,
+                        write_timeout=30,
+                        connect_timeout=30
+                    )
+                except error.TimedOut:
+                    await context.bot.send_message(
+                        chat_id=update.effective_user.id,
+                        text="if you didn't receive the file please try again"
+                    )
 
         else:
             await context.bot.send_message(
