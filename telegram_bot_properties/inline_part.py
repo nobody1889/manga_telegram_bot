@@ -7,6 +7,8 @@ from telegram.ext import ContextTypes
 from stuff import show_comics, read_new_from_file, valid_sites
 from clients.web_sites.web_clients import Manhwax, Chapmanganato, Comixextra
 
+from admin import send_errors
+
 inline_query_buttons = [
     'my_comics',
     'my_new_chapters'
@@ -48,7 +50,8 @@ def button_maker_via_range(the_comic) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(out_buttons)
 
 
-async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
+@send_errors
+async def generator(update: Update, context: ContextTypes.DEFAULT_TYPE, link):
     action = context.user_data.get("action")
     if action == 'my_comics':
         comics = show_comics(name=str(update.effective_user.id))
@@ -106,13 +109,13 @@ async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
             photo=the_comic["cover_url"],
             caption=f"""
             name: {the_comic["name"]}
-            
+
             rate: {the_comic["rate"]}
-            
+
             status: {the_comic["status"]}
-            
+
             tags: {the_comic["genres"]}
-            
+
             new chapters
             """,
             reply_markup=InlineKeyboardMarkup(keys)
@@ -121,6 +124,7 @@ async def generator(link, update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["action"] = None
 
 
+@send_errors
 async def my_comics_inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE, action: str):
     name = update.effective_user.id
     try:
@@ -158,6 +162,7 @@ async def my_comics_inline_query(update: Update, context: ContextTypes.DEFAULT_T
         await context.bot.send_message(chat_id=name, text='use /start to add comics')
 
 
+@send_errors
 async def my_comics(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         await my_comics_inline_query(update, context, 'my_comics')
@@ -168,6 +173,7 @@ async def my_comics(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+@send_errors
 async def remove_my_comics(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         await my_comics_inline_query(update, context, 'remove_comics')
@@ -179,6 +185,7 @@ async def remove_my_comics(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+@send_errors
 async def my_new_chapters(update: Update, context: ContextTypes.DEFAULT_TYPE):
     name = update.effective_user.id
     all_comics: dict = read_new_from_file(user=str(name))
@@ -203,6 +210,7 @@ async def my_new_chapters(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=name, text='nothing to show\nfirst get </check>')
 
 
+@send_errors
 async def search_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE, no: bool = True):
     if no:
         buttons = [
@@ -230,6 +238,7 @@ async def fetch_new(cls, limit: int = LIMIT_SIZE_OF_ITEMS_QUERY, offset: int = 0
     return new_data
 
 
+@send_errors
 async def search_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global LIMIT_SIZE_OF_ITEMS_QUERY
 
@@ -260,6 +269,7 @@ async def search_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.inline_query.answer(results, cache_time=0, next_offset=next_offset, read_timeout=10)
 
 
+@send_errors
 async def new_comic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global LIMIT_SIZE_OF_ITEMS_QUERY
 
