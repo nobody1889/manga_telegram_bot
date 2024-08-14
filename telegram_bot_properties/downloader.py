@@ -1,7 +1,7 @@
 import asyncio
 import io
 import zipfile
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, error
+from telegram import Update, error
 from telegram.ext import ContextTypes
 from stuff import show_comics
 from .inline_part import which_site
@@ -26,6 +26,9 @@ def get_file(user: str, name: str, chapters: list[int], where: str = "all_chapte
     for dict_name in dict_file:
         if dict_file[dict_name]["name"] == name:
             if len(chapters) == 2:  # we have range
+                if chapters[0] == 0:
+                    for chapter in dict_file[dict_name][where][chapters[0]:chapters[1]]:
+                        my_list.append(chapter)
                 if chapters[0] - 1 == 0:
                     for chapter in dict_file[dict_name][where][-chapters[1]:]:
                         my_list.append(chapter)
@@ -60,7 +63,7 @@ async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, string:
 
     if len(data) == 3:
         data = extract_data(data=data)
-        
+
         files_list = get_file(
             user=str(update.effective_user.id),
             name=data["comic_name"],
@@ -68,7 +71,6 @@ async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, string:
             where=data['chapters_type']
         )
 
-        # link = ','.join(str(d) for d in data['chapters'])
         if len(files_list) > 0:
             cls = which_site(files_list[0].split('/')[2].split('.')[0])
             task = [image_extractor(cls, chapters=file) for file in files_list]
