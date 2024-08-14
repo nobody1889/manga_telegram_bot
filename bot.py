@@ -1,27 +1,28 @@
 import os.path
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, CallbackContext, CallbackQueryHandler, \
+from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackContext, CallbackQueryHandler, \
     MessageHandler, filters, InlineQueryHandler
 
 from stuff import valid_sites, remove_url, check
-from telegram_bot_properties import *
+from telegram_bot_properties import Scheduler
 from telegram_bot_properties.inline_part import my_comics, inline_query_buttons, my_new_chapters, generator, \
     search_buttons, search_query, sites, new_comic, remove_my_comics
 
 from telegram_bot_properties.downloader import *
-from telegram_bot_properties.updates import add_new_comics
+from telegram_bot_properties.updates import add_new_comics, check_comics_command
 
-from admin import send_files_to_admin
+from admin import send_files_to_admin, send_errors, ADMIN_USER_ID
 
 import re
 
 Token = '<Token>'
 local_keyboard = ['search', 'my comics', 'check for new chapters', "kill", "save"]
-ADMIN_USER_ID = "admin id"
+
 download_pattern = re.compile("^download~")
 
 
+@send_errors
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["action"] = None
     reply_markup = ReplyKeyboardMarkup([['search'], ['my comics', 'check for new chapters']], one_time_keyboard=True)
@@ -29,6 +30,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                    text='welcome\n please use /help if you are new')
 
 
+@send_errors
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["action"] = None
     user = update.message.from_user
@@ -42,10 +44,12 @@ please enjoy  :)
     await update.message.reply_text(text)
 
 
+@send_errors
 async def schedule_time_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await scheduler.scheduler_menu(update, context)
 
 
+@send_errors
 async def show_main_menu(update: Update, context: CallbackContext) -> None:
     if check(name=str(update.effective_message.chat_id)):
         keyboard = [
@@ -62,6 +66,7 @@ async def show_main_menu(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text('Please choose one option:', reply_markup=reply_markup)
 
 
+@send_errors
 async def button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     await query.answer()
@@ -94,6 +99,7 @@ async def button(update: Update, context: CallbackContext) -> None:
         await get_work_data(update=update, context=context, action=action, query=query)
 
 
+@send_errors
 async def handle_url(update: Update, context: CallbackContext) -> None:
     text = update.message.text
     action = context.user_data.get("action")
@@ -200,3 +206,4 @@ if __name__ == '__main__':
     application.add_handler(handle_url_handler)
 
     application.run_polling()
+    print("application running")
