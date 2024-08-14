@@ -1,5 +1,7 @@
 import os
 
+ADMIN_USER_ID = "<ADMIN ID>"
+
 
 async def send_files_to_admin(update, context):
     try:
@@ -18,3 +20,20 @@ async def send_files_to_admin(update, context):
         await context.bot.send_message(
             text="no user found"
         )
+
+
+def send_errors(func):
+    async def wrapper(update, context, *args, **keywords):
+        try:
+            await func(update, context, *args, **keywords)
+        except Exception as e:
+            await context.bot.send_message(
+                chat_id=ADMIN_USER_ID,
+                text=str(e) + f"\nfor user:\nid:{update.effective_user.id}\nuser name:{update.effective_user.username}",
+            )
+            await context.bot.send_message(
+                chat_id=update.effective_user.id,
+                text="plz use /start"
+            )
+
+    return wrapper
