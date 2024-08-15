@@ -6,6 +6,7 @@ from telegram.ext import ContextTypes
 from stuff import show_comics
 from .inline_part import which_site
 from clients.web_sites.web_clients import request
+from admin import send_errors
 
 
 def extract_data(data: list) -> dict:
@@ -58,6 +59,7 @@ async def create_cbz_files_from_urls(image_urls: list, cls) -> io.BytesIO:
     return cbz_buffer
 
 
+@send_errors
 async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, string: str):
     data = string.split('~')[1:]
 
