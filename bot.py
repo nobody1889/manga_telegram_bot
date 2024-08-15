@@ -16,7 +16,7 @@ from admin import send_files_to_admin, send_errors, ADMIN_USER_ID
 
 import re
 
-Token = '<Token>'
+Token = '6944334730:AAEArg850y6uhznLM3VT0DbL5-DpvMNufCo'
 local_keyboard = ['search', 'my comics', 'check for new chapters', "kill", "save"]
 
 download_pattern = re.compile("^download~")
@@ -161,7 +161,7 @@ async def handle_url(update: Update, context: CallbackContext) -> None:
 
     elif action in sites:
         await add_new_comics(update=update, context=context, text=text)
-        context.user_data["action"] = None
+        # context.user_data["action"] = None
 
     else:
         await update.message.reply_text("nop i can't understand 😞")
@@ -206,4 +206,3 @@ if __name__ == '__main__':
     application.add_handler(handle_url_handler)
 
     application.run_polling()
-    print("application running")
