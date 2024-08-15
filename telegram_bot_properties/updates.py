@@ -9,7 +9,8 @@ async def check_comics_command(update: Update, context: ContextTypes.DEFAULT_TYP
     try:
         await context.bot.send_message(chat_id=update.effective_user.id, text='search for new updates')
         comics = await search_new(str(update.effective_user.id))
-        if comics:
+        comics_v = [comic for comic in comics.values() if comic]
+        if comics_v:
             for comic in comics:
                 text0 = f"new chapters for {comic} :\n"
                 text1 = [one for one in comics[comic]]
