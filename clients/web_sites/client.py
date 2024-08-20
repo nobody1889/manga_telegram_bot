@@ -5,6 +5,12 @@ from bs4 import BeautifulSoup
 
 from clients.web_sites.web_clients import Manhwax, Chapmanganato, Comixextra
 
+valid_sites = [
+    'https://manhwax.org/',
+    'https://chapmanganato.to/',
+    'https://comixextra.com/',
+]
+
 
 class Client:
     def __init__(self, name: str, urls: list[str] = None):
@@ -74,4 +80,4 @@ class Client:
         await self.main_pages_update()
 
 
-__all__ = ('Client',)
+__all__ = ('Client', 'valid_sites')
