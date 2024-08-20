@@ -5,9 +5,10 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackContext, Ca
     MessageHandler, filters, InlineQueryHandler
 
 from stuff import valid_sites, remove_url, check
+from clients.web_sites.web_clients import sites
 from telegram_bot_properties import Scheduler
 from telegram_bot_properties.inline_part import my_comics, inline_query_buttons, my_new_chapters, generator, \
-    search_buttons, search_query, sites, new_comic, remove_my_comics
+    search_buttons, search_query, new_comic, remove_my_comics
 
 from telegram_bot_properties.downloader import *
 from telegram_bot_properties.updates import add_new_comics, check_comics_command
