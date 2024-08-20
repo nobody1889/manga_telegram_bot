@@ -4,8 +4,8 @@ from telegram import Update, InlineQueryResultArticle, InputTextMessageContent, 
     InlineKeyboardButton, error
 from telegram.ext import ContextTypes
 
-from stuff import show_comics, read_new_from_file, valid_sites
-from clients.web_sites.web_clients import Manhwax, Chapmanganato, Comixextra
+from stuff import show_comics, read_new_from_file
+from clients.web_sites.web_clients import valid_sites_dict
 
 from admin import send_errors
 
@@ -13,21 +13,15 @@ inline_query_buttons = [
     'my_comics',
     'my_new_chapters'
 ]
-sites = [site.split('/')[-2].split('.')[0] for site in valid_sites]
 
 LIMIT_SIZE_OF_ITEMS_QUERY: int = 0
 
 
 def which_site(website: str):
-    match website:
-        case "manhwax":
-            return Manhwax
-        case "chapmanganato":
-            return Chapmanganato
-        case "comixextra":
-            return Comixextra
-        case _:
-            raise ValueError(f"the key is not valid: {website}")
+    try:
+        return valid_sites_dict[website]
+    except KeyError:
+        raise ValueError(f"the key is not valid: {website}")
 
 
 def button_maker_via_range(the_comic) -> InlineKeyboardMarkup:
@@ -215,7 +209,7 @@ async def search_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE, no:
     if no:
         buttons = [
             [InlineKeyboardButton(text=site, callback_data=site)
-             ] for site in sites]
+             ] for site in valid_sites_dict.keys()]
 
         await update.message.reply_photo(
             photo="profile.jpg",
