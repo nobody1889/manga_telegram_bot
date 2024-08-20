@@ -3,13 +3,7 @@ from clients.commons import Js_worker, Requests
 import asyncio
 from bs4 import BeautifulSoup
 
-from clients.web_sites.web_clients import Manhwax, Chapmanganato, Comixextra
-
-valid_sites = [
-    'https://manhwax.org/',
-    'https://chapmanganato.to/',
-    'https://comixextra.com/',
-]
+from clients.web_sites.web_clients import valid_sites_dict
 
 
 class Client:
@@ -34,14 +28,8 @@ class Client:
         url_type = url.split('/')[2].split('.')[0]
         soup = BeautifulSoup(page.content, 'lxml')
 
-        match url_type:
-            case 'manhwax':
-                self.data[url] = Manhwax.comic_main_page(soup, data=self.data[url])
-            case 'chapmanganato':
-                self.data[url] = Chapmanganato.comic_main_page(soup, data=self.data[url])
-            case 'comixextra':
-                self.data[url] = Comixextra.comic_main_page(soup, data=self.data[url])
-
+        site = valid_sites_dict[url_type]
+        self.data[url] = site.comic_main_page(soup, data=self.data[url])
         last_one = self.data[url]["last_chapter"]
 
         if last_one:
@@ -78,6 +66,3 @@ class Client:
 
     async def run(self):
         await self.main_pages_update()
-
-
-__all__ = ('Client', 'valid_sites')
