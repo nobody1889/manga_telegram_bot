@@ -1,7 +1,8 @@
 import os
 
 from clients.commons import Js_worker
-from clients.web_sites import Client, valid_sites
+from clients.web_sites import Client
+from clients.web_sites.web_clients import valid_sites
 
 
 def check(name: str):
