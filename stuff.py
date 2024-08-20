@@ -1,13 +1,7 @@
 import os
 
 from clients.commons import Js_worker
-from clients.web_sites import Client
-
-valid_sites = [
-    'https://manhwax.org/',
-    'https://chapmanganato.to/',
-    'https://comixextra.com/',
-]
+from clients.web_sites import Client, valid_sites
 
 
 def check(name: str):
@@ -59,7 +53,6 @@ def remove_url(urls: str, user):
 
 
 async def search_new(user: str, urls: list[str] = None) -> dict:
-    print('search_new')
     person = Client(name=user, urls=urls)
     await person.run()
     person.write_data()
