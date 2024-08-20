@@ -4,6 +4,14 @@ import re
 from bs4 import BeautifulSoup
 import httpx
 
+valid_sites = [  # websites we create class(we scraping it) for
+    'https://manhwax.org/',
+    'https://chapmanganato.to/',
+    'https://comixextra.com/',
+]
+
+sites = [site.split('/')[-2].split('.')[0] for site in valid_sites]
+
 
 async def request(url: str, header: dict = None, bfs: bool = True) -> BeautifulSoup | bytes:
     client = httpx.AsyncClient()
@@ -39,6 +47,7 @@ class BaseWebClass:
 
 
 class Manhwax(BaseWebClass):
+    name = "manhwax"
     limit_search: int = 10
     limit_new: int = 20
     get_headers: dict = {}
@@ -125,6 +134,7 @@ class Manhwax(BaseWebClass):
 
 
 class Chapmanganato(BaseWebClass):
+    name = "chapmanganato"
     limit_search: int = 20
     limit_new: int = 24
     get_headers: dict = {}
@@ -204,6 +214,7 @@ class Chapmanganato(BaseWebClass):
 
 
 class Comixextra(BaseWebClass):
+    name = "comixextra"
     limit_search: int = 25
     limit_new: int = 30
     get_headers: dict = {
@@ -284,3 +295,16 @@ class Comixextra(BaseWebClass):
         body = soup.find("div", class_="chapter-container").find_all('img')
         images = [part["src"] for part in body]
         return images
+
+
+sites_list = [  # you must add any class you added here
+    Manhwax,
+    Chapmanganato,
+    Comixextra,
+]
+
+valid_sites_dict = {
+    the_class.name: the_class for the_class in sites_list
+}
+
+__all__ = ('valid_sites', 'valid_sites_dict', 'sites', 'request')
