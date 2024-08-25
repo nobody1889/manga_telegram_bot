@@ -1,7 +1,7 @@
 import asyncio
 import io
 import zipfile
-from telegram import Update, error
+from telegram import Update, error, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from stuff import show_comics
 from .inline_part import which_site
@@ -105,12 +105,16 @@ async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, string:
 
 
 async def get_work_data(update: Update, context: ContextTypes.DEFAULT_TYPE, action, query):
-    if action != 'back' and action != "range_download":
+    if action != 'back' and action != "range_download" and action != "left" and action != "right":
         context.user_data["on_work_data"]["range"].append(int(action))
     d_range: list = context.user_data["on_work_data"]["range"]
 
     if action == 'back' and len(d_range) > 0:
         context.user_data["on_work_data"]["range"].pop()
+    elif action == "right":
+        context.user_data["on_work_data"]["level"] += 1
+    elif action == "left" and context.user_data["on_work_data"]["level"] > 0:
+        context.user_data["on_work_data"]["level"] -= 1
 
     if len(d_range) == 2:
         if d_range[0] > d_range[1]:
@@ -131,4 +135,6 @@ async def get_work_data(update: Update, context: ContextTypes.DEFAULT_TYPE, acti
 
     else:
         await query.edit_message_caption(f"choose the rage of download...[{','.join(str(r) for r in d_range)}]")
-        await query.edit_message_reply_markup(context.user_data["on_work_data"]["buttons"])
+        await query.edit_message_reply_markup(
+            InlineKeyboardMarkup(context.user_data["on_work_data"]["buttons"][context.user_data["on_work_data"]['level']])
+        )
