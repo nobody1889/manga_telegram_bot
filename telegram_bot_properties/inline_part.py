@@ -24,24 +24,31 @@ def which_site(website: str):
         raise ValueError(f"the key is not valid: {website}")
 
 
-def button_maker_via_range(the_comic) -> InlineKeyboardMarkup:
+def button_maker_via_range(the_comic) -> list:
     cls = which_site(the_comic["type"])
-    out_buttons = []
-
-    for num in range(0, len(the_comic["all_chapters"]), 7):
-        in_buttons = []  # Initialize in_buttons inside the outer loop
-        for inner_num, comic in enumerate(the_comic["all_chapters"][num:num + 7]):
-            res = cls.get_chapter_number(comic)
-            in_buttons.append(
-                InlineKeyboardButton(
-                    text=str(res),
-                    callback_data=str(len(the_comic["all_chapters"]) - (inner_num + num))
+    last_button = []
+    for number in range(0, len(the_comic["all_chapters"]), 84):
+        out_buttons = []
+        for num in range(number, number + 84, 7):
+            in_buttons = []  # Initialize in_buttons inside the outer loop
+            for inner_num, comic in enumerate(the_comic["all_chapters"][num:num + 7]):
+                res = cls.get_chapter_number(comic)
+                in_buttons.append(
+                    InlineKeyboardButton(
+                        text=str(res),
+                        callback_data=str(len(the_comic["all_chapters"]) - (inner_num + num))
+                    )
                 )
-            )
-        out_buttons.append(in_buttons)
+            out_buttons.append(in_buttons)
 
-    out_buttons.append([InlineKeyboardButton(text="back", callback_data="back")])
-    return InlineKeyboardMarkup(out_buttons)
+        out_buttons.append([
+                InlineKeyboardButton(text="back", callback_data="back"),
+                InlineKeyboardButton(text="right", callback_data="right"),
+                InlineKeyboardButton(text="left", callback_data="left")
+            ])
+
+        last_button.append(out_buttons)
+    return last_button
 
 
 @send_errors
@@ -54,6 +61,7 @@ async def generator(update: Update, context: ContextTypes.DEFAULT_TYPE, link):
         context.user_data["on_work_data"] = comic
         context.user_data["on_work_data"].update({"buttons": button_maker_via_range(comic)})
         context.user_data["on_work_data"].update({"range": []})
+        context.user_data["on_work_data"].update({"level": 0})
 
         await update.message.reply_photo(
             photo=comic["cover_url"],
@@ -65,7 +73,6 @@ async def generator(update: Update, context: ContextTypes.DEFAULT_TYPE, link):
                     [InlineKeyboardButton("first chapter", url=comic["all_chapters"][-1]),
                      InlineKeyboardButton("last chapter", url=comic["all_chapters"][0])],
                     [InlineKeyboardButton(
-                        # "go to download", callback_data=f"download~{comic['name']}~all_chapters"
                         text="range_download",
                         callback_data="range_download"
                     )]
