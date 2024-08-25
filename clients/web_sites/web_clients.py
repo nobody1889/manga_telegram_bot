@@ -137,7 +137,9 @@ class Chapmanganato(BaseWebClass):
     name = "chapmanganato"
     limit_search: int = 20
     limit_new: int = 24
-    get_headers: dict = {}
+    get_headers: dict = {
+        "Referer": "https://chapmanganato.to/",
+    }
 
     @staticmethod
     def get_chapter_number(url: str) -> float:
