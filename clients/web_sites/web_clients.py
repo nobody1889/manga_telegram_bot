@@ -166,7 +166,7 @@ class Chapmanganato(BaseWebClass):
         all_tags = soup.find("table", class_="variations-tableInfo").find_all("td", class_="table-value")
         data["status"] = all_tags[-2].text
         data["genres"] = [tag.text for tag in all_tags[-1] if tag.text not in [' - ', '\n']]
-        data["cover_url"] = soup.find("img", class_="img-loading")['src']
+        data["cover_url"] = soup.find_all("img", class_="img-loading")[-1]['src']
 
         return data
 
