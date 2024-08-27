@@ -111,9 +111,9 @@ async def get_work_data(update: Update, context: ContextTypes.DEFAULT_TYPE, acti
 
     if action == 'back' and len(d_range) > 0:
         context.user_data["on_work_data"]["range"].pop()
-    elif action == "right":
+    elif action == "left" and len(context.user_data["on_work_data"]["buttons"]) > 1:
         context.user_data["on_work_data"]["level"] += 1
-    elif action == "left" and context.user_data["on_work_data"]["level"] > 0:
+    elif action == "right" and context.user_data["on_work_data"]["level"] > 0:
         context.user_data["on_work_data"]["level"] -= 1
 
     if len(d_range) == 2:
