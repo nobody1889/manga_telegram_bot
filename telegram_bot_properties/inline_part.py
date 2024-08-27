@@ -42,9 +42,9 @@ def button_maker_via_range(the_comic) -> list:
             out_buttons.append(in_buttons)
 
         out_buttons.append([
+                InlineKeyboardButton(text="<", callback_data="left"),
                 InlineKeyboardButton(text="back", callback_data="back"),
-                InlineKeyboardButton(text="right", callback_data="right"),
-                InlineKeyboardButton(text="left", callback_data="left")
+                InlineKeyboardButton(text=">", callback_data="right")
             ])
 
         last_button.append(out_buttons)
