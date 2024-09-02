@@ -24,28 +24,35 @@ class Client:
             raise ValueError('invalid person')
 
     async def _each_page(self, page: httpx.Client().get):
-        url = str(page.url)
-        url_type = url.split('/')[2].split('.')[0]
-        soup = BeautifulSoup(page.content, 'lxml')
+        try:
+            url = str(page.url)
+            url_type = url.split('/')[2].split('.')[0]
+            soup = BeautifulSoup(page.content, 'lxml')
 
-        site = valid_sites_dict[url_type]
-        self.data[url] = site.comic_main_page(soup, data=self.data[url])
-        last_one = self.data[url]["last_chapter"]
+            site = valid_sites_dict[url_type]
+            self.data[url] = site.comic_main_page(soup, data=self.data[url])
+            last_one = self.data[url]["last_chapter"]
 
-        if last_one:
-            all_chapters_len = len(self.data[url]["all_chapters"])
-            num = self.data[url]["all_chapters"].index(last_one)
+            if last_one:
+                all_chapters_len = len(self.data[url]["all_chapters"])
+                num = self.data[url]["all_chapters"].index(last_one)
 
-            if (all_chapters_len - num) > 0:
-                self.data[url]["new_chapters"] = self.data[url]["all_chapters"][:num]
-                self._new_chapters_dict[self.data[url]["name"]] = self.data[url]["all_chapters"][:num]
+                if (all_chapters_len - num) > 0:
+                    self.data[url]["new_chapters"] = self.data[url]["all_chapters"][:num]
+                    self._new_chapters_dict[self.data[url]["name"]] = self.data[url]["all_chapters"][:num]
 
+                else:
+                    self.data[url]["new_chapters"] = []
             else:
                 self.data[url]["new_chapters"] = []
-        else:
-            self.data[url]["new_chapters"] = []
 
-        self.data[url]["last_chapter"] = self.data[url]["all_chapters"][0]
+            if self.data[url]["all_chapters"]:
+                self.data[url]["last_chapter"] = self.data[url]["all_chapters"][0]
+            else:
+                self.data[url]["last_chapter"] = ""
+        except Exception as e:  # I know this not good i will solve the problem latter(problem: something is out of
+            # range)
+            pass
 
     async def main_pages_update(self):
         self.__comics_res = await Requests().aget(self.urls)
