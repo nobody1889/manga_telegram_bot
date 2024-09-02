@@ -1,12 +1,12 @@
 import json
 import re
-
 from bs4 import BeautifulSoup
 import httpx
 
 valid_sites = [  # websites we create class(we scraping it) for
     'https://manhwax.org/',
     'https://chapmanganato.to/',
+    'https://manganato.com/',
     'https://comixextra.com/',
 ]
 
@@ -154,11 +154,18 @@ class Chapmanganato(BaseWebClass):
 
     @staticmethod
     def comic_main_page(soup: BeautifulSoup, data: dict) -> dict:
-        chapters = soup.find("ul", class_="row-content-chapter").find_all('li')
+        try:
+            chapters = soup.find("ul", class_="row-content-chapter").find_all('li')
+        except TypeError:
+            chapters = None
 
         data["all_chapters"].clear()
-        for chapter in chapters:
-            data["all_chapters"].append(chapter.find('a')['href'] + '/')
+
+        if chapters is None:
+            data["all_chapters"] = []
+        else:
+            for chapter in chapters:
+                data["all_chapters"].append(chapter.find('a')['href'] + '/')
 
         data["name"] = soup.find('h1').text.split('\n')[-1]
         data["rate"] = float(soup.find('em', {'property': "v:average"}).text) * 2
@@ -213,6 +220,15 @@ class Chapmanganato(BaseWebClass):
         for image in images:
             raw_images.append(image['src'])
         return raw_images
+
+
+class Manganato(Chapmanganato):  # this class try to solve all type of comic in Chapmanganato
+    name = "manganato"
+    limit_search: int = 20
+    limit_new: int = 24
+    get_headers: dict = {
+        "Referer": "https://chapmanganato.to/",
+    }
 
 
 class Comixextra(BaseWebClass):
@@ -302,6 +318,7 @@ class Comixextra(BaseWebClass):
 sites_list = [  # you must add any class you added here
     Manhwax,
     Chapmanganato,
+    Manganato,
     Comixextra,
 ]
 
