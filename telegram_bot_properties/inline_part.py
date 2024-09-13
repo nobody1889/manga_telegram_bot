@@ -42,10 +42,10 @@ def button_maker_via_range(the_comic) -> list:
             out_buttons.append(in_buttons)
 
         out_buttons.append([
-                InlineKeyboardButton(text="<", callback_data="left"),
-                InlineKeyboardButton(text="back", callback_data="back"),
-                InlineKeyboardButton(text=">", callback_data="right")
-            ])
+            InlineKeyboardButton(text="<", callback_data="left"),
+            InlineKeyboardButton(text="back", callback_data="back"),
+            InlineKeyboardButton(text=">", callback_data="right")
+        ])
 
         last_button.append(out_buttons)
     return last_button
@@ -125,40 +125,60 @@ async def generator(update: Update, context: ContextTypes.DEFAULT_TYPE, link):
     context.user_data["action"] = None
 
 
+def range_maker(name: str | int, limit: int, offset: int = 0) -> dict:
+    all_comics: dict = show_comics(name=str(name))
+    data = {}
+    begin = 0 if offset == 0 else offset
+    end = offset + limit
+    for comic_name in list(all_comics)[begin:end]:
+        data.update(
+            {
+                comic_name: all_comics[comic_name]
+            }
+        )
+    return data
+
+
 @send_errors
 async def my_comics_inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE, action: str):
+    global LIMIT_SIZE_OF_ITEMS_QUERY
+    LIMIT_SIZE_OF_ITEMS_QUERY = 20
+
     name = update.effective_user.id
+
+    offset = int(update.inline_query.offset or 0)
+
+    results = []
+    show_range = range_maker(name=name, limit=LIMIT_SIZE_OF_ITEMS_QUERY, offset=offset)
+
+    if action == 'remove_comics' and offset == 0:
+        results.append(
+            InlineQueryResultArticle(
+                id=str(uuid4()),
+                title="remove all",
+                input_message_content=InputTextMessageContent(
+                    message_text="remove all",
+                    disable_web_page_preview=True
+                ),
+                thumbnail_url=None
+            ))
+
     try:
         context.user_data['action'] = action
-        all_comics: dict = show_comics(name=str(name))
-
-        results = []
-
-        if action == 'remove_comics':
+        for comic_name in show_range:
             results.append(
                 InlineQueryResultArticle(
                     id=str(uuid4()),
-                    title="remove all",
-                    input_message_content=InputTextMessageContent(
-                        message_text="remove all",
-                        disable_web_page_preview=True
-                    ),
-                    thumbnail_url=None
-                ))
-
-        for comic_name in all_comics:
-            results.append(
-                InlineQueryResultArticle(
-                    id=str(uuid4()),
-                    title=all_comics[comic_name]["name"],
+                    title=show_range[comic_name]["name"],
                     input_message_content=InputTextMessageContent(
                         message_text=comic_name,
                         disable_web_page_preview=True,
                     ),
-                    thumbnail_url=all_comics[comic_name]["cover_url"],
+                    thumbnail_url=show_range[comic_name]["cover_url"],
                 ))
 
-        await update.inline_query.answer(results, cache_time=0)
+        next_offset = str(offset + LIMIT_SIZE_OF_ITEMS_QUERY) if len(show_range) == LIMIT_SIZE_OF_ITEMS_QUERY else ''
+        await update.inline_query.answer(results, cache_time=0, next_offset=next_offset, read_timeout=10)
     except ValueError:
         await context.bot.send_message(chat_id=name, text='use /start to add comics')
 
