@@ -11,13 +11,13 @@ from telegram_bot_properties.inline_part import my_comics, inline_query_buttons,
     search_buttons, search_query, new_comic, remove_my_comics
 
 from telegram_bot_properties.downloader import *
-from telegram_bot_properties.updates import add_new_comics, check_comics_command
+from telegram_bot_properties.updates import add_new_comics, check_comics_command, show_info
 
 from admin import send_files_to_admin, send_errors, ADMIN_USER_ID
 
 import re
 
-Token = '<Token>'
+Token = '6944334730:AAEArg850y6uhznLM3VT0DbL5-DpvMNufCo'
 local_keyboard = ['search', 'my comics', 'check for new chapters', "kill", "save"]
 
 download_pattern = re.compile("^download~")
@@ -73,7 +73,14 @@ async def button(update: Update, context: CallbackContext) -> None:
     await query.answer()
     action = query.data
 
-    if action in sites:
+    if action == "add_new":
+        url = update.effective_message.caption.split('\n')[0].split(' ')[-1]
+        await query.delete_message()
+        await add_new_comics(update=update, context=context, text=url, user=update.effective_user.id)
+    elif action == "delete":
+        await query.delete_message()
+
+    elif action in sites:
         await update.callback_query.edit_message_caption(
             caption="enjoy"
         )
@@ -144,14 +151,7 @@ async def handle_url(update: Update, context: CallbackContext) -> None:
                 context.user_data["action"] = None
 
             case 'receive_url':
-                try:
-                    await add_new_comics(update=update, context=context, text=text)
-                    context.user_data["action"] = None
-                except AttributeError:
-                    await context.bot.send_message(
-                        chat_id=update.effective_user.id,
-                        text="you have to send me the home page of comic!!!\ntry agin or use search"
-                    )
+                await show_info(update=update, context=context, url=text)
 
             case 'set_time':
                 if await scheduler.set_timer(text, update, context):
@@ -161,8 +161,7 @@ async def handle_url(update: Update, context: CallbackContext) -> None:
         await generator(link=text, update=update, context=context)
 
     elif action in sites:
-        await add_new_comics(update=update, context=context, text=text)
-        # context.user_data["action"] = None
+        await show_info(update=update, context=context, url=text)
 
     else:
         await update.message.reply_text("nop i can't understand 😞")
