@@ -17,7 +17,7 @@ from admin import send_files_to_admin, send_errors, ADMIN_USER_ID
 
 import re
 
-Token = '6944334730:AAEArg850y6uhznLM3VT0DbL5-DpvMNufCo'
+Token = 'TOKEN'
 local_keyboard = ['search', 'my comics', 'check for new chapters', "kill", "save"]
 
 download_pattern = re.compile("^download~")
