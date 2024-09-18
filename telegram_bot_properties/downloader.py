@@ -66,12 +66,14 @@ async def downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, string:
     if len(data) == 3:
         data = extract_data(data=data)
 
-        files_list = get_file(
+        files_list: list = get_file(
             user=str(update.effective_user.id),
             name=data["comic_name"],
             chapters=data["chapters"],
             where=data['chapters_type']
         )
+
+        files_list.reverse()
 
         if len(files_list) > 0:
             cls = which_site(files_list[0].split('/')[2].split('.')[0])
