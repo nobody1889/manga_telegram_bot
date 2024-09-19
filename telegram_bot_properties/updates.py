@@ -10,7 +10,8 @@ async def check_comics_command(update: Update, context: ContextTypes.DEFAULT_TYP
     try:
         await context.bot.send_message(chat_id=update.effective_user.id, text='search for new updates')
         comics = await search_new(str(update.effective_user.id))
-        comics_v = [comic for comic in comics.values() if comic]
+        comics_v = [comic for comic in comics.keys() if comics[comic]]
+
         if comics_v:
             for comic in comics_v:
                 text0 = f"new chapters for {comic} :\n"
@@ -40,7 +41,7 @@ async def show_info(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str
         response_content: bytes = await request(url=url, header=cls.get_headers, bfs=True)
         data = cls.comic_main_page(soup=response_content, data={})
 
-        text = f"url: {v}\nname: {data["name"]}\nrate: {data['rate']}\ntags: {data["genres"]}"
+        text = f"url: {v}\nname: {data["name"]}\nrate: {data['rate']}\ntags: {data["genres"]}\nchapters: {len(data["all_chapters"])}"
         buttons = InlineKeyboardMarkup([
                     [
                         InlineKeyboardButton("ADD", callback_data="add_new"),
