@@ -65,12 +65,14 @@ class Manhwax(BaseWebClass):
 
     @staticmethod
     def comic_main_page(soup: BeautifulSoup, data: dict) -> dict:
+        chapters = soup.find('div', {"class": "eplister", "id": "chapterlist"}).find('ul').find_all('li')
         if data:
-            chapters = soup.find('div', {"class": "eplister", "id": "chapterlist"}).find('ul').find_all('li')
-
             data["all_chapters"].clear()
-            for chapter in chapters:
-                data["all_chapters"].append(chapter.find('a')['href'])
+        else:
+            data["all_chapters"] = []
+
+        for chapter in chapters:
+            data["all_chapters"].append(chapter.find('a')['href'])
 
         data["name"] = soup.find('h1', {"class": "entry-title", "itemprop": "name"}).text
         data["rate"] = float(soup.find('div', {"class": "num", "itemprop": "ratingValue"}).text)
@@ -155,19 +157,21 @@ class Chapmanganato(BaseWebClass):
 
     @staticmethod
     def comic_main_page(soup: BeautifulSoup, data: dict) -> dict:
+
+        try:
+            chapters = soup.find("ul", class_="row-content-chapter").find_all('li')
+        except TypeError:
+            chapters = None
         if data:
-            try:
-                chapters = soup.find("ul", class_="row-content-chapter").find_all('li')
-            except TypeError:
-                chapters = None
-
             data["all_chapters"].clear()
+        else:
+            data["all_chapters"] = []
 
-            if chapters is None:
-                data["all_chapters"] = []
-            else:
-                for chapter in chapters:
-                    data["all_chapters"].append(chapter.find('a')['href'] + '/')
+        if chapters is None:
+            data["all_chapters"] = []
+        else:
+            for chapter in chapters:
+                data["all_chapters"].append(chapter.find('a')['href'] + '/')
 
         data["name"] = soup.find('h1').text.split('\n')[-1]
         data["rate"] = float(soup.find('em', {'property': "v:average"}).text) * 2
@@ -254,13 +258,15 @@ class Comixextra(BaseWebClass):
 
     @staticmethod
     def comic_main_page(soup: BeautifulSoup, data: dict) -> dict:
+        chapters = soup.find("tbody", {"id": "list", "offset": "0"}).find_all('td')
         if data:
-            chapters = soup.find("tbody", {"id": "list", "offset": "0"}).find_all('td')
-
             data["all_chapters"].clear()
-            for chapter in chapters:
-                if chapter.find('a'):
-                    data["all_chapters"].append(chapter.find('a')['href'] + '/')
+        else:
+            data["all_chapters"] = []
+
+        for chapter in chapters:
+            if chapter.find('a'):
+                data["all_chapters"].append(chapter.find('a')['href'] + '/')
 
         name = soup.find('h1', class_="movie-title mobile-hide").find('span').text.split('\n')
         new_name = [n for n in name[1].split(' ') if n]
